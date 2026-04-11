@@ -221,6 +221,15 @@
   .dues-ok{background:var(--success-bg);color:var(--success)}
   .dues-bad{background:var(--danger-bg);color:var(--danger)}
   @media(max-width:600px){.allot-grid{grid-template-columns:repeat(2,1fr)}.info-grid{grid-template-columns:1fr}}
+
+  /* ── ADMIN OFFICE ROLE BADGE ── */
+  .role-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+  .role-admin{background:#e8f3ff;color:#1a3a7c;border:1px solid #b5d4f4}
+  .role-warden{background:var(--gold-pale);color:#7a5c00;border:1px solid var(--gold-light)}
+  .admin-task-card{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:16px;margin-bottom:10px}
+  .admin-task-card .task-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+  .admin-task-card .task-meta{font-size:12px;color:var(--gray-600);margin-top:3px}
+  .admin-delegation-note{background:#e8f3ff;border:1px solid #b5d4f4;border-left:3px solid #185fa5;border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:#1a3a7c;margin-bottom:16px}
 </style>
 </head>
 <body>
@@ -241,6 +250,7 @@
     <button class="header-btn" onclick="showSection('new-student')">New Student</button>
     <button class="header-btn" onclick="showSection('continuing')">Student Login</button>
     <button class="header-btn" onclick="showSection('warden')">Warden</button>
+    <button class="header-btn" onclick="showSection('admin')">Admin Office</button>
   </nav>
 </header>
 
@@ -271,6 +281,16 @@
         <div>
           <div class="home-card-title">Student Login</div>
           <div class="home-card-desc">Login to view profile · Apply leave · Pay fees</div>
+        </div>
+      </div>
+      <div class="home-card-arrow">›</div>
+    </div>
+    <div class="home-card" onclick="showSection('admin')">
+      <div class="home-card-left">
+        <div class="home-card-icon" style="background:#e8f3ff">🏢</div>
+        <div>
+          <div class="home-card-title">Admin Office</div>
+          <div class="home-card-desc">Verify payments · Allotment · Account unlock · No dues check</div>
         </div>
       </div>
       <div class="home-card-arrow">›</div>
@@ -639,6 +659,7 @@
         <button class="tab-btn" onclick="csTab('fines')">Fines</button>
         <button class="tab-btn" onclick="csTab('leave')">Leave</button>
         <button class="tab-btn" onclick="csTab('update')">Update</button>
+        <button class="tab-btn" onclick="csTab('grievance')" id="cs-tab-btn-grievance">Grievances</button>
       </div>
 
       <!-- Info Tab -->
@@ -737,6 +758,58 @@
         <button class="btn btn-primary" onclick="applyLeave()" id="btn-apply-leave">Submit Leave Application</button>
       </div>
 
+      <!-- Grievances Tab -->
+      <div id="cs-tab-grievance" class="hidden">
+        <div class="section-heading">My Grievances</div>
+        <div id="cs-grievance-list"><p style="color:var(--gray-400);font-size:13px">Loading…</p></div>
+        <hr class="divider"/>
+        <div class="section-heading">Submit a New Grievance</div>
+
+        <!-- Success message (hidden until submission) -->
+        <div id="grv-success-banner" class="hidden" style="background:var(--success-bg);border:1.5px solid var(--success);border-radius:var(--radius-md);padding:18px 20px;margin-bottom:18px;text-align:center">
+          <div style="font-size:32px;margin-bottom:8px">✅</div>
+          <div style="font-weight:700;font-size:16px;color:var(--success);margin-bottom:4px">Grievance Submitted Successfully!</div>
+          <div id="grv-success-id" style="font-size:13px;color:var(--success);margin-bottom:6px"></div>
+          <div style="font-size:12px;color:var(--gray-600)">Your grievance has been sent to the Hostel Warden. You can track its status above.</div>
+          <button class="btn btn-success btn-sm" style="margin-top:12px" onclick="document.getElementById('grv-success-banner').classList.add('hidden');document.getElementById('grv-form-area').classList.remove('hidden')">+ Submit Another Grievance</button>
+        </div>
+
+        <!-- Form area (hidden after successful submission) -->
+        <div id="grv-form-area">
+          <div class="alert alert-info" style="margin-bottom:12px;font-size:12px">
+            Submit any complaint, concern, or issue to the Hostel Warden. You will be notified of the status and reply.
+          </div>
+          <div class="field">
+            <label>Category <span class="req">*</span></label>
+            <select id="grv-category">
+              <option value="">— Select category —</option>
+              <option>Maintenance / Repairs</option>
+              <option>Water Supply</option>
+              <option>Electricity</option>
+              <option>Cleanliness &amp; Hygiene</option>
+              <option>Food / Mess</option>
+              <option>Ragging / Harassment</option>
+              <option>Room Allotment Issue</option>
+              <option>Fee / Fine Dispute</option>
+              <option>Security Concern</option>
+              <option>Other</option>
+            </select>
+            <div class="err-msg hidden" id="err-grv-category"></div>
+          </div>
+          <div class="field">
+            <label>Subject <span class="req">*</span></label>
+            <input type="text" id="grv-subject" placeholder="Brief title of your grievance (min 5 characters)" maxlength="120"/>
+            <div class="err-msg hidden" id="err-grv-subject"></div>
+          </div>
+          <div class="field">
+            <label>Description <span class="req">*</span></label>
+            <textarea id="grv-description" rows="4" placeholder="Describe your grievance in detail (min 20 characters)…" maxlength="1000"></textarea>
+            <div class="err-msg hidden" id="err-grv-description"></div>
+          </div>
+          <button class="btn btn-primary" onclick="submitGrievance()" id="btn-submit-grv">Submit Grievance</button>
+        </div>
+      </div>
+
       <!-- Update Tab -->
       <div id="cs-tab-update" class="hidden">
         <div class="alert alert-info">Updating any field will set your application to <strong>Pending</strong> until re-approved by the warden.</div>
@@ -830,6 +903,9 @@
         </button>
         <button class="tab-btn" onclick="wrTab('nodues')">No Dues</button>
         <button class="tab-btn" onclick="wrTab('letters')">Issued Letters</button>
+        <button class="tab-btn" onclick="wrTab('grievances')" id="wr-tab-btn-grievances">
+          📣 Grievances <span class="tab-badge hidden" id="wr-grv-badge">0</span>
+        </button>
         <button class="tab-btn" onclick="wrTab('unlock')">🔓 Unlock Account</button>
       </div>
 
@@ -912,6 +988,18 @@
       </div>
 
       <!-- No Dues Tab -->
+      <!-- Grievances Tab -->
+      <div id="wr-tab-grievances" class="hidden">
+        <div class="section-heading">Student Grievances</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn btn-secondary btn-sm" onclick="filterGrievances('all')" id="grv-filter-all" style="font-size:11px">All</button>
+          <button class="btn btn-secondary btn-sm" onclick="filterGrievances('pending')" id="grv-filter-pending" style="font-size:11px">🕐 Pending</button>
+          <button class="btn btn-secondary btn-sm" onclick="filterGrievances('in-review')" id="grv-filter-in-review" style="font-size:11px">🔍 In Review</button>
+          <button class="btn btn-secondary btn-sm" onclick="filterGrievances('resolved')" id="grv-filter-resolved" style="font-size:11px">✅ Resolved</button>
+        </div>
+        <div id="wr-grievance-list"><p style="color:var(--gray-400);font-size:13px">Loading…</p></div>
+      </div>
+
       <div id="wr-tab-nodues" class="hidden">
         <div class="section-heading">Issue No Dues Certificate</div>
         <div class="field">
@@ -990,6 +1078,9 @@
         <hr class="divider"/>
         <div id="wr-allot-form">
           <div class="section-heading">Allot Accommodation</div>
+          <div id="wr-allot-admin-note" class="hidden" style="background:var(--info-bg);border:1px solid #b5d4f4;border-left:3px solid #185fa5;border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--info);margin-bottom:14px">
+            🏢 Admin Office has pre-filled accommodation details. Please review and confirm before approving.
+          </div>
           <div class="form-row">
             <div class="field">
               <label>Hostel Block <span class="req">*</span></label>
@@ -1039,6 +1130,342 @@
   </div><!-- wr-dashboard -->
 </section>
 
+
+<!-- ══════════════════════════════════════════════════════════
+     ADMIN OFFICE PORTAL
+══════════════════════════════════════════════════════════ -->
+<section id="sec-admin" class="hidden">
+
+  <!-- Login -->
+  <div id="adm-login">
+    <div class="card login-wrap">
+      <div class="login-header">
+        <div style="font-size:40px;margin-bottom:10px">🏢</div>
+        <div class="card-title">Admin Office Login</div>
+        <div class="card-subtitle" style="margin-bottom:0">GPM Hostel — Administrative Staff Portal</div>
+      </div>
+      <div class="admin-delegation-note">
+        The Admin Office handles <strong>operational tasks</strong>: payment verification, account unlocks, grievance intake, leave review, and no-dues pre-checks.
+        Disciplinary decisions remain with the Warden.
+      </div>
+      <div class="field">
+        <label>Admin ID <span class="req">*</span></label>
+        <input type="text" id="adm-id" placeholder="Enter admin ID" autocomplete="username"/>
+      </div>
+      <div class="field">
+        <label>Password <span class="req">*</span></label>
+        <div style="position:relative">
+          <input type="password" id="adm-pass" placeholder="Enter password" autocomplete="current-password"
+            onkeydown="if(event.key==='Enter') adminLogin()" style="padding-right:40px"/>
+          <button type="button" onclick="togglePwd('adm-pass','adm-pass-eye')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--gray-600);padding:0" id="adm-pass-eye">👁</button>
+        </div>
+        <div class="err-msg hidden" id="err-adm-login"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="adminLogin()">Login to Admin Portal</button>
+      <div style="text-align:center;margin-top:14px">
+        <button class="back-link" onclick="showSection('home')" style="font-size:12px;color:var(--gray-400)">← Return to Home</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="adm-dashboard" class="hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--navy)">Admin Office Dashboard</div>
+        <div style="font-size:13px;color:var(--gray-600)">GPM Hostel — Operational Tasks <span class="role-badge role-admin" style="margin-left:8px">Admin Office</span></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="adminLogout()">Logout</button>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stat-grid" id="adm-stats"></div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="admTab('payments')" id="adm-tab-btn-payments">
+          Payment Verification <span class="tab-badge" id="adm-pay-badge" style="display:none">0</span>
+        </button>
+        <button class="tab-btn" onclick="admTab('allotment')">🏠 Allotment</button>
+        <button class="tab-btn" onclick="admTab('unlock')">🔓 Account Unlock</button>
+        <button class="tab-btn" onclick="admTab('leaves')">
+          Leave Review <span class="tab-badge" id="adm-leave-badge" style="display:none">0</span>
+        </button>
+        <button class="tab-btn" onclick="admTab('grievances')">
+          Grievance Intake <span class="tab-badge" id="adm-grv-badge" style="display:none">0</span>
+        </button>
+        <button class="tab-btn" onclick="admTab('nodues')">No Dues Pre-Check</button>
+      </div>
+
+      <!-- ── PAYMENT VERIFICATION TAB ── -->
+      <div id="adm-tab-payments">
+        <div class="admin-delegation-note">
+          ✅ <strong>Admin task:</strong> Verify student payment receipts (Registration Fee, Caution Money, Allotment Fee).
+          Approved payments allow the Warden to proceed with room allotment.
+        </div>
+        <div id="adm-pay-list"><p style="color:var(--gray-400);font-size:13px"><span class="spinner spinner-dark"></span> Loading…</p></div>
+      </div>
+
+      <!-- ── ALLOTMENT TAB ── -->
+      <div id="adm-tab-allotment" class="hidden">
+        <div class="admin-delegation-note">
+          🏠 <strong>Admin task:</strong> Pre-fill room, bed, chair, and table numbers for pending students after physical inspection.
+          The Warden reviews this and clicks <em>Approve &amp; Send Allotment Letter</em> — only the Warden can finalise.
+        </div>
+        <div class="field">
+          <label>Search Pending Student by Roll Number</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px;flex:1">
+              <input type="text" id="adm-allot-roll-no" maxlength="2" placeholder="25" style="text-align:center;font-weight:600"/>
+              <select id="adm-allot-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
+                <option>CE</option><option selected>CSE</option><option>EE</option>
+                <option>EC</option><option>FTS</option><option>ME</option>
+              </select>
+              <input type="text" id="adm-allot-roll-year" maxlength="4" placeholder="2026" style="text-align:center;font-weight:600"/>
+            </div>
+            <button class="btn btn-secondary" onclick="admAllotSearch()">Search</button>
+          </div>
+        </div>
+        <div id="adm-allot-result" class="hidden">
+          <hr class="divider"/>
+          <div id="adm-allot-student-info" style="margin-bottom:16px"></div>
+          <div class="section-heading">Pre-fill Accommodation Details</div>
+          <div class="form-row">
+            <div class="field">
+              <label>Hostel Block <span class="req">*</span></label>
+              <select id="adm-allot-hostel">
+                <option>BH-01</option><option>BH-02</option><option>GH-01</option><option>GH-02</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Room Number <span class="req">*</span></label>
+              <input type="text" id="adm-allot-room" placeholder="e.g. T-20"/>
+              <div class="err-msg hidden" id="err-adm-allot-room"></div>
+            </div>
+            <div class="field">
+              <label>Bed Number <span class="req">*</span></label>
+              <input type="text" id="adm-allot-bed" placeholder="e.g. B-01"/>
+              <div class="err-msg hidden" id="err-adm-allot-bed"></div>
+            </div>
+            <div class="field">
+              <label>Chair Number <span class="req">*</span></label>
+              <input type="text" id="adm-allot-chair" placeholder="e.g. C-01"/>
+              <div class="err-msg hidden" id="err-adm-allot-chair"></div>
+            </div>
+            <div class="field" style="grid-column:1/-1">
+              <label>Table Number <span class="req">*</span></label>
+              <input type="text" id="adm-allot-table" placeholder="e.g. D-01"/>
+              <div class="err-msg hidden" id="err-adm-allot-table"></div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="admSaveAllotment()" id="btn-adm-allot">💾 Save Accommodation — Forward to Warden</button>
+          <div id="adm-allot-msg" style="margin-top:12px"></div>
+        </div>
+
+        <hr class="divider"/>
+        <div class="section-heading">Pending Applications — Allotment Status</div>
+        <div id="adm-allot-list"><p style="color:var(--gray-400);font-size:13px">Loading…</p></div>
+      </div>
+
+      <!-- ── ACCOUNT UNLOCK TAB ── -->
+      <div id="adm-tab-unlock" class="hidden">
+        <div class="admin-delegation-note">
+          🔓 <strong>Admin task:</strong> Unlock student accounts locked after repeated failed login attempts.
+          Verify the student's identity in person before unlocking.
+        </div>
+        <div class="alert alert-warning" style="margin-bottom:16px;font-size:13px">
+          A student account is locked after <strong>5 wrong passwords</strong> and <strong>2 failed password resets</strong>.
+          Verify student identity in person, then use the master key to unlock.
+        </div>
+        <div class="field">
+          <label>Student Email <span class="req">*</span></label>
+          <input type="email" id="adm-unlock-email" placeholder="student@email.com"/>
+          <div class="err-msg hidden" id="err-adm-unlock-email"></div>
+        </div>
+        <div class="field">
+          <label>Master Key <span class="req">*</span></label>
+          <div style="position:relative">
+            <input type="password" id="adm-unlock-masterkey" placeholder="Enter master key" style="padding-right:40px"/>
+            <button type="button" onclick="togglePwd('adm-unlock-masterkey','eye-adm-unlock')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px" id="eye-adm-unlock">👁</button>
+          </div>
+          <div class="err-msg hidden" id="err-adm-unlock-key"></div>
+        </div>
+        <button class="btn btn-primary" onclick="adminUnlockAccount()" id="btn-adm-unlock">🔓 Unlock Account</button>
+        <div id="adm-unlock-result" style="margin-top:14px"></div>
+      </div>
+
+      <!-- ── LEAVE REVIEW TAB ── -->
+      <div id="adm-tab-leaves" class="hidden">
+        <div class="admin-delegation-note">
+          📋 <strong>Admin task:</strong> Review leave applications for eligibility (approved student, valid dates, within 10-day limit).
+          Log a forwarding note and escalate to Warden. The Warden makes the final approve/reject decision.
+        </div>
+        <div class="section-heading">Pending Leave Applications</div>
+        <div id="adm-leave-pending"><p style="color:var(--gray-400);font-size:13px"><span class="spinner spinner-dark"></span> Loading…</p></div>
+        <hr class="divider"/>
+        <div class="section-heading" style="margin-top:4px">All Leave Applications</div>
+        <div id="adm-leave-all"></div>
+      </div>
+
+      <!-- ── GRIEVANCE INTAKE TAB ── -->
+      <div id="adm-tab-grievances" class="hidden">
+        <div class="admin-delegation-note">
+          📣 <strong>Admin task:</strong> Log intake notes on new grievances and mark them as "in-review" so the Warden sees prioritised cases.
+          Only the Warden can reply to students or resolve grievances.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn btn-secondary btn-sm" onclick="admFilterGrievances('all')"       id="adm-grv-f-all"       style="font-size:11px">All</button>
+          <button class="btn btn-secondary btn-sm" onclick="admFilterGrievances('pending')"    id="adm-grv-f-pending"    style="font-size:11px">🕐 Pending</button>
+          <button class="btn btn-secondary btn-sm" onclick="admFilterGrievances('in-review')" id="adm-grv-f-in-review" style="font-size:11px">🔍 In Review</button>
+          <button class="btn btn-secondary btn-sm" onclick="admFilterGrievances('resolved')"  id="adm-grv-f-resolved"  style="font-size:11px">✅ Resolved</button>
+        </div>
+        <div id="adm-grievance-list"><p style="color:var(--gray-400);font-size:13px"><span class="spinner spinner-dark"></span> Loading…</p></div>
+      </div>
+
+      <!-- ── NO DUES PRE-CHECK TAB ── -->
+      <div id="adm-tab-nodues" class="hidden">
+        <div class="admin-delegation-note">
+          📄 <strong>Admin task:</strong> Run a full pre-check — verify financial clearance <em>and</em> physically inspect the room, bed, chair, and table.
+          If damage is found, the system suggests a fine structure for the Warden to impose. The Warden still issues the final certificate.
+        </div>
+        <div class="field">
+          <label>Search Student by Roll Number</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px;flex:1">
+              <input type="text" id="adm-nd-roll-no" maxlength="2" placeholder="25" style="text-align:center;font-weight:600"/>
+              <select id="adm-nd-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
+                <option>CE</option><option selected>CSE</option><option>EE</option>
+                <option>EC</option><option>FTS</option><option>ME</option>
+              </select>
+              <input type="text" id="adm-nd-roll-year" maxlength="4" placeholder="2026" style="text-align:center;font-weight:600"/>
+            </div>
+            <button class="btn btn-secondary" onclick="admNdFetchStudent()">Fetch Student</button>
+          </div>
+        </div>
+
+        <div id="adm-nd-result" class="hidden">
+          <hr class="divider"/>
+          <div id="adm-nd-student-info" style="margin-bottom:16px"></div>
+
+          <!-- Financial check summary (auto) -->
+          <div id="adm-nd-financial" style="margin-bottom:20px"></div>
+
+          <!-- Physical inspection form -->
+          <div class="section-heading">Physical Inspection — Room & Furniture</div>
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px">
+            Check each item physically and mark if any damage is found. Damaged items will generate a fine suggestion for the Warden.
+          </p>
+
+          <!-- Inspection items — static HTML, toggled by JS -->
+          <div id="adm-nd-inspection-items">
+
+            <!-- Room -->
+            <div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:14px;margin-bottom:10px" id="adm-insp-card-room">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div style="font-weight:600;font-size:14px">🏠 Room</div>
+                <div style="display:flex;gap:14px;align-items:center">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--success)">
+                    <input type="radio" name="adm-insp-room" value="ok" checked onchange="admInspToggle('room',false)"/> ✓ OK
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--danger)">
+                    <input type="radio" name="adm-insp-room" value="damaged" onchange="admInspToggle('room',true)"/> ✗ Damaged
+                  </label>
+                </div>
+              </div>
+              <div id="adm-insp-note-wrap-room" class="hidden" style="margin-top:10px">
+                <div class="field" style="margin-bottom:0">
+                  <label style="font-size:11px">Damage Description <span class="req">*</span></label>
+                  <input type="text" id="adm-insp-note-room" placeholder="Describe the room damage observed…" style="font-size:13px"/>
+                </div>
+                <div style="margin-top:8px;background:var(--warning-bg);border:1px solid var(--gold-light);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--warning)">
+                  💡 Suggested fine: <strong>₹2000</strong> — will be recommended to Warden
+                </div>
+              </div>
+            </div>
+
+            <!-- Bed -->
+            <div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:14px;margin-bottom:10px" id="adm-insp-card-bed">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div style="font-weight:600;font-size:14px">🛏 Bed</div>
+                <div style="display:flex;gap:14px;align-items:center">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--success)">
+                    <input type="radio" name="adm-insp-bed" value="ok" checked onchange="admInspToggle('bed',false)"/> ✓ OK
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--danger)">
+                    <input type="radio" name="adm-insp-bed" value="damaged" onchange="admInspToggle('bed',true)"/> ✗ Damaged
+                  </label>
+                </div>
+              </div>
+              <div id="adm-insp-note-wrap-bed" class="hidden" style="margin-top:10px">
+                <div class="field" style="margin-bottom:0">
+                  <label style="font-size:11px">Damage Description <span class="req">*</span></label>
+                  <input type="text" id="adm-insp-note-bed" placeholder="Describe the bed damage observed…" style="font-size:13px"/>
+                </div>
+                <div style="margin-top:8px;background:var(--warning-bg);border:1px solid var(--gold-light);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--warning)">
+                  💡 Suggested fine: <strong>₹800</strong> — will be recommended to Warden
+                </div>
+              </div>
+            </div>
+
+            <!-- Chair -->
+            <div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:14px;margin-bottom:10px" id="adm-insp-card-chair">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div style="font-weight:600;font-size:14px">🪑 Chair</div>
+                <div style="display:flex;gap:14px;align-items:center">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--success)">
+                    <input type="radio" name="adm-insp-chair" value="ok" checked onchange="admInspToggle('chair',false)"/> ✓ OK
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--danger)">
+                    <input type="radio" name="adm-insp-chair" value="damaged" onchange="admInspToggle('chair',true)"/> ✗ Damaged
+                  </label>
+                </div>
+              </div>
+              <div id="adm-insp-note-wrap-chair" class="hidden" style="margin-top:10px">
+                <div class="field" style="margin-bottom:0">
+                  <label style="font-size:11px">Damage Description <span class="req">*</span></label>
+                  <input type="text" id="adm-insp-note-chair" placeholder="Describe the chair damage observed…" style="font-size:13px"/>
+                </div>
+                <div style="margin-top:8px;background:var(--warning-bg);border:1px solid var(--gold-light);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--warning)">
+                  💡 Suggested fine: <strong>₹500</strong> — will be recommended to Warden
+                </div>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:14px;margin-bottom:10px" id="adm-insp-card-table">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div style="font-weight:600;font-size:14px">🪞 Table</div>
+                <div style="display:flex;gap:14px;align-items:center">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--success)">
+                    <input type="radio" name="adm-insp-table" value="ok" checked onchange="admInspToggle('table',false)"/> ✓ OK
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--danger)">
+                    <input type="radio" name="adm-insp-table" value="damaged" onchange="admInspToggle('table',true)"/> ✗ Damaged
+                  </label>
+                </div>
+              </div>
+              <div id="adm-insp-note-wrap-table" class="hidden" style="margin-top:10px">
+                <div class="field" style="margin-bottom:0">
+                  <label style="font-size:11px">Damage Description <span class="req">*</span></label>
+                  <input type="text" id="adm-insp-note-table" placeholder="Describe the table damage observed…" style="font-size:13px"/>
+                </div>
+                <div style="margin-top:8px;background:var(--warning-bg);border:1px solid var(--gold-light);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--warning)">
+                  💡 Suggested fine: <strong>₹600</strong> — will be recommended to Warden
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <button class="btn btn-primary" onclick="admRunNoDuesCheck()" id="btn-adm-nd-check" style="margin-top:8px">🔍 Run Full Pre-Check</button>
+          <div id="adm-nd-final-result" style="margin-top:16px"></div>
+        </div>
+      </div>
+
+    </div><!-- .card -->
+  </div><!-- adm-dashboard -->
+</section>
+
 </main>
 
 <!-- ══ TOAST ══ -->
@@ -1048,7 +1475,7 @@
 // ══════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════
-const GAS_URL = "https://script.google.com/macros/s/AKfycbw0vFr_n0OIPzda2bXhL3itJ99N8dpPmDuQeDeLulg0i1Bp6AE7fqReacUNOqyXR5IRDg/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_clvNR36kCW7cCspGRzekHe-fZhFI_nG3h7w4DbUdhrDt7ng/exec";
 // Warden credentials are stored securely in the Google Sheet "Config" tab.
 // Do NOT put warden ID/password in this file — it is public on GitHub.
 
@@ -1088,35 +1515,37 @@ document.addEventListener('DOMContentLoaded', () => {
 // NAVIGATION
 // ══════════════════════════════════════════════════════════
 function showSection(name) {
-  ['home','new-student','continuing','warden'].forEach(s => {
+  ['home','new-student','continuing','warden','admin'].forEach(s => {
     const el = document.getElementById('sec-'+s);
     if(el) el.classList.toggle('hidden', s !== name);
   });
   document.querySelectorAll('.header-btn').forEach((b,i) => {
-    const ids = ['home','new-student','continuing','warden'];
+    const ids = ['home','new-student','continuing','warden','admin'];
     b.classList.toggle('active', ids[i] === name);
   });
   currentSection = name;
-  // When navigating to warden section via header Home→Warden or any path,
-  // ensure the dashboard cards are visible (openApprove hides them) and
-  // the approve panel is closed, then re-render from cached data.
   if(name === 'warden') {
     const dashboard = document.getElementById('wr-dashboard');
     const panel     = document.getElementById('wr-approve-panel');
     const isLoggedIn = dashboard && !dashboard.classList.contains('hidden');
     if(isLoggedIn) {
-      // Close approve panel if open
       if(panel && !panel.classList.contains('hidden')) {
         panel.classList.add('hidden');
         wrCurrentApproveRoll = null;
       }
-      // Restore all cards and stats that openApprove() hides
       document.getElementById('wr-stats').classList.remove('hidden');
       document.querySelectorAll('#wr-dashboard > .card').forEach(c => c.classList.remove('hidden'));
-      // Re-render from cached data (no network call)
       renderWardenStats();
       renderApplicationsList();
       wrTab('applications');
+      loadWardenGrievances();
+    }
+  }
+  if(name === 'admin') {
+    const dashboard = document.getElementById('adm-dashboard');
+    const isLoggedIn = dashboard && !dashboard.classList.contains('hidden');
+    if(isLoggedIn) {
+      admTab('payments');
     }
   }
   window.scrollTo({top:0, behavior:'smooth'});
@@ -1625,15 +2054,42 @@ function renderPayments() {
   const payments = Array.isArray(s.payments) ? s.payments : [];
   const list = document.getElementById('cs-payment-list');
   if(!payments.length) { list.innerHTML = '<p style="color:var(--gray-400);font-size:13px">No payments recorded yet.</p>'; return; }
-  list.innerHTML = `<table class="data-table" style="margin-bottom:12px">
-    <thead><tr><th>Semester</th><th>Receipt</th><th>Date</th><th>Status</th></tr></thead>
+
+  // Check for any rejected payments — show prominent alert
+  const rejectedPays = payments.filter(p=>p.status==='rejected');
+  let alertHtml = '';
+  if(rejectedPays.length) {
+    alertHtml = `<div class="alert alert-danger" style="margin-bottom:14px">
+      ⚠ <strong>${rejectedPays.length} payment receipt${rejectedPays.length>1?'s have':' has'} been rejected by the Admin Office.</strong>
+      Please check the reason below and resubmit a valid receipt from the <em>Add Payment</em> section.
+    </div>`;
+  }
+
+  list.innerHTML = alertHtml + `<table class="data-table" style="margin-bottom:12px">
+    <thead><tr><th>Semester</th><th>Receipt No.</th><th>Date</th><th>Status</th></tr></thead>
     <tbody>
-    ${payments.map(p=>`<tr>
-      <td>Semester ${p.semester}</td>
-      <td>${p.receipt}</td>
-      <td>${p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN') : '—'}</td>
-      <td><span class="badge badge-${p.status||'pending'}">${p.status||'Pending'}</span></td>
-    </tr>`).join('')}
+    ${payments.map((p,i)=>{
+      const isRejected = p.status==='rejected';
+      const isApproved = p.status==='approved';
+      let statusCell = '';
+      if(isApproved) {
+        statusCell = '<span class="badge badge-approved">✓ Verified</span>';
+      } else if(isRejected) {
+        statusCell = `<div>
+          <span class="badge badge-rejected">✗ Rejected</span>
+          ${p.rejectionComment ? `<div style="font-size:11px;color:var(--danger);margin-top:4px;font-weight:500">Reason: ${p.rejectionComment}</div>` : ''}
+          <button class="btn btn-secondary btn-sm" style="margin-top:8px;font-size:11px;border-color:var(--danger);color:var(--danger)" onclick="openResubmitModal(${i})">✏ Edit &amp; Resubmit</button>
+        </div>`;
+      } else {
+        statusCell = '<span class="badge badge-pending">Pending Verification</span>';
+      }
+      return `<tr style="${isRejected?'background:var(--danger-bg)':''}">
+        <td>Semester ${p.semester}</td>
+        <td>${p.receipt||'—'}</td>
+        <td>${p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN') : '—'}</td>
+        <td>${statusCell}</td>
+      </tr>`;
+    }).join('')}
     </tbody></table>`;
 }
 
@@ -1786,13 +2242,14 @@ async function wardenUnlockStudentAccount() {
 }
 
 function csTab(name) {
-  ['info','payment','fines','leave','update'].forEach(t => {
+  ['info','payment','fines','leave','grievance','update'].forEach(t => {
     const el=document.getElementById('cs-tab-'+t); if(el) el.classList.toggle('hidden', t!==name);
   });
   document.querySelectorAll('#cs-profile .tab-btn').forEach((b,i) => {
-    b.classList.toggle('active', ['info','payment','fines','leave','update'][i]===name);
+    b.classList.toggle('active', ['info','payment','fines','leave','update','grievance'][i]===name);
   });
   if(name==='leave') loadMyLeaves();
+  if(name==='grievance') loadMyGrievances();
 }
 
 async function addPayment() {
@@ -2048,12 +2505,12 @@ function renderAllStudentsList() {
 }
 
 function wrTab(name) {
-  ['applications','students','fines','leaves','nodues','letters','unlock'].forEach(t=>{
+  ['applications','students','fines','leaves','grievances','nodues','letters','unlock'].forEach(t=>{
     const el = document.getElementById('wr-tab-'+t);
     if(el) el.classList.toggle('hidden', t!==name);
   });
   document.querySelectorAll('#wr-dashboard .tab-btn').forEach((b,i)=>{
-    b.classList.toggle('active', ['applications','students','fines','leaves','nodues','letters','unlock'][i]===name);
+    b.classList.toggle('active', ['applications','students','fines','leaves','grievances','nodues','letters','unlock'][i]===name);
   });
   // Reload data for each tab switch
   if(name==='applications') {
@@ -2064,6 +2521,7 @@ function wrTab(name) {
     else loadWardenData();
   }
   else if(name==='leaves') loadWardenLeaves();
+  else if(name==='grievances') loadWardenGrievances();
   else if(name==='fines') { renderFineVerifyList(); populateFineStuDropdown(); populateRevokeStuDropdown(); }
   else if(name==='nodues') { document.getElementById('nd-result').classList.add('hidden'); }
   else if(name==='letters') renderWardenLetters();
@@ -2215,16 +2673,21 @@ async function openApprove(rollFull, viewOnly=false) {
 
   const allPaymentsHtml = payments.length === 0
     ? '<p style="color:var(--danger);font-size:13px;padding:8px 0">⚠ No fee payments on record. Student must re-submit payment details.</p>'
-    : payments.map((p,i) => `
-        <div style="padding:10px 0;border-bottom:1px solid var(--gray-100)">
+    : payments.map((p,i) => {
+      const isRejected = p.status === 'rejected';
+      return `
+        <div style="padding:10px 0;border-bottom:1px solid var(--gray-100);${isRejected?'background:var(--danger-bg);padding:10px;border-radius:var(--radius-sm);margin-bottom:6px':''}">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
             <div style="flex:1">
               <div style="font-size:13px;font-weight:600">Semester ${p.semester} — ₹${p.amount||4500}</div>
               <div style="font-size:11px;color:var(--gray-600)">Receipt No: <strong>${p.receipt||'—'}</strong> · ${p.paidAt?new Date(p.paidAt).toLocaleDateString('en-IN'):'—'} ${p.note?'· '+p.note:''}</div>
+              ${isRejected && p.rejectionComment ? `<div style="font-size:11px;color:var(--danger);margin-top:3px;font-weight:600">✗ Admin rejected: ${p.rejectionComment}</div>` : ''}
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
               ${p.status==='approved'
                 ? '<span style="font-size:11px;font-weight:600;color:var(--success);background:var(--success-bg);padding:3px 10px;border-radius:20px">✓ Verified</span>'
+                : isRejected
+                ? '<span style="font-size:11px;font-weight:600;color:var(--danger);background:var(--danger-bg);padding:3px 10px;border-radius:20px">✗ Rejected by Admin</span>'
                 : `<span style="font-size:11px;font-weight:600;color:var(--warning);background:var(--warning-bg);padding:3px 10px;border-radius:20px">Pending</span>
                    <button class="btn btn-success btn-sm" onclick="approvePaymentWarden('${s.rollFull}',${i})" style="font-size:11px;padding:4px 10px">✓ Verify</button>`
               }
@@ -2235,11 +2698,15 @@ async function openApprove(rollFull, viewOnly=false) {
               🖼 View Receipt Image
             </button>
           </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 
   const hasApprovedPayment = approvedPayments.length > 0;
-  const feeGateHtml = !hasApprovedPayment
-    ? '<div class="alert alert-danger" style="margin-top:12px">⛔ Cannot approve until at least one allotment fee payment is verified above.</div>'
+  const hasRejectedPayment = payments.some(p=>p.status==='rejected');
+  const feeGateHtml = hasRejectedPayment
+    ? `<div class="alert alert-danger" style="margin-top:12px">⛔ Cannot approve — Admin Office has rejected a payment receipt. Student must resubmit a valid receipt first.</div>`
+    : !hasApprovedPayment
+    ? '<div class="alert alert-danger" style="margin-top:12px">⛔ Cannot approve until at least one allotment fee payment is verified by Admin Office.</div>'
     : outstandingFine > 0
     ? `<div class="alert alert-danger" style="margin-top:12px">⛔ Cannot approve until ₹${outstandingFine} fine is cleared.</div>`
     : '';
@@ -2254,13 +2721,28 @@ async function openApprove(rollFull, viewOnly=false) {
   // Grey out approve button if fees not verified
   const approveBtn = document.getElementById('wr-approve-btn');
   if(approveBtn) {
-    const canApprove = hasApprovedPayment && outstandingFine === 0;
+    const canApprove = hasApprovedPayment && !hasRejectedPayment && outstandingFine === 0;
     approveBtn.disabled = !canApprove;
-    approveBtn.title = !canApprove ? 'Verify fee payment first' : '';
+    approveBtn.title = hasRejectedPayment ? 'Admin has rejected a payment receipt' : !canApprove ? 'Verify fee payment first' : '';
     approveBtn.style.opacity = canApprove ? '1' : '0.5';
   }
 
-  ['wr-room','wr-bed','wr-chair','wr-table'].forEach(id=>{ document.getElementById(id).value=''; clearErr(id); });
+  // Auto-populate allotment fields if Admin Office pre-filled hostelInfo
+  const hi = s.hostelInfo;
+  const adminNote = document.getElementById('wr-allot-admin-note');
+  if(hi && hi.roomNo && s.status === 'pending') {
+    // Admin pre-filled — populate fields and show note
+    const hostSel = document.getElementById('wr-hostel');
+    if(hostSel) { for(let o of hostSel.options) if(o.value===hi.hostel) o.selected=true; }
+    document.getElementById('wr-room').value  = hi.roomNo  || '';
+    document.getElementById('wr-bed').value   = hi.bedNo   || '';
+    document.getElementById('wr-chair').value = hi.chairNo || '';
+    document.getElementById('wr-table').value = hi.tableNo || '';
+    if(adminNote) adminNote.classList.remove('hidden');
+  } else {
+    ['wr-room','wr-bed','wr-chair','wr-table'].forEach(id=>{ document.getElementById(id).value=''; clearErr(id); });
+    if(adminNote) adminNote.classList.add('hidden');
+  }
 
   // Fetch images from backend
   const imgDiv = document.getElementById('wr-student-images');
@@ -2520,15 +3002,28 @@ async function loadFineReceiptImage(rollFull, fineIdx, containerId) {
 }
 
 async function verifyFinePayment(rollFull, fineIdx, verifyAction) {
-  let reason = '';
   if(verifyAction === 'reject') {
-    reason = prompt('Enter reason for rejecting this fine payment receipt:');
-    if(reason === null) return; // cancelled
-    if(!reason.trim()) { toast('Please provide a rejection reason.','error'); return; }
+    openReasonModal({
+      title: 'Reject Fine Payment Receipt',
+      label: 'Rejection Reason',
+      placeholder: 'e.g. Receipt number mismatch, blurred image, invalid receipt...',
+      required: true,
+      confirmLabel: '✗ Reject Receipt',
+      confirmClass: 'btn-danger',
+      onConfirm: async (reason) => {
+        const r = await callBackend('verifyFinePayment', {rollFull, fineIndex:fineIdx, verifyAction:'reject', reason});
+        if(r.success) {
+          toast('Fine payment receipt rejected.', 'error');
+          await loadWardenData(true);
+          renderFineVerifyList();
+        } else { toast('Failed: '+(r.error||''),'error'); }
+      }
+    });
+    return;
   }
-  const r = await callBackend('verifyFinePayment', {rollFull, fineIndex:fineIdx, verifyAction, reason});
+  const r = await callBackend('verifyFinePayment', {rollFull, fineIndex:fineIdx, verifyAction, reason:''});
   if(r.success) {
-    toast(verifyAction==='approve' ? 'Fine payment verified!' : 'Fine payment receipt rejected.', verifyAction==='approve'?'success':'error');
+    toast('Fine payment verified!', 'success');
     await loadWardenData(true);
     renderFineVerifyList();
   } else {
@@ -2861,22 +3356,265 @@ function renderStudentDocLinks(s) {
 
 // ─── PROFILE PHOTO & SIGNATURE ──────────────────────────────────────────────
 async function loadStudentProfileImages(rollFull) {
+  // Use the lightweight getProfileImages endpoint — only fetches photo + signature
+  // from Drive, avoiding the slow full getStudentImages() call that loads all
+  // payment/fine receipt images and frequently causes timeouts on the profile tab.
+  const imgR = await callBackend('getProfileImages', {rollFull});
+  if(!imgR.success) return;
+
+  // Remove any previously inserted block to avoid duplicates on tab re-visits
+  const existing = document.getElementById('cs-profile-imgs');
+  if(existing) existing.remove();
+
+  const photo     = imgR.photo     || '';
+  const signature = imgR.signature || '';
+  if(!photo && !signature) return;
+
+  // Insert the photo/sig block right inside the profile card, after the info grid
   const infoGrid = document.getElementById('cs-info-grid');
   if(!infoGrid) return;
-  const imgR = await callBackend('getStudentImages',{rollFull});
-  if(imgR.success && imgR.images) {
-    const imgs = imgR.images;
-    const existing = document.getElementById('cs-profile-imgs');
-    if(existing) existing.remove();
-    if(imgs.photo || imgs.signature) {
-      const div = document.createElement('div');
-      div.id = 'cs-profile-imgs';
-      div.style.cssText='display:flex;gap:20px;margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-100)';
-      if(imgs.photo) div.innerHTML+=`<div style="text-align:center"><img src="data:image/jpeg;base64,${imgs.photo}" style="width:80px;height:100px;object-fit:cover;border:1px solid var(--gray-200);border-radius:4px"/><div style="font-size:10px;color:var(--gray-600);margin-top:4px">Photo</div></div>`;
-      if(imgs.signature) div.innerHTML+=`<div style="text-align:center"><img src="data:image/jpeg;base64,${imgs.signature}" style="width:120px;height:60px;object-fit:contain;border:1px solid var(--gray-200);border-radius:4px;background:#fff"/><div style="font-size:10px;color:var(--gray-600);margin-top:4px">Signature</div></div>`;
-      infoGrid.after(div);
-    }
+
+  const div = document.createElement('div');
+  div.id = 'cs-profile-imgs';
+  div.style.cssText = 'display:flex;gap:20px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--gray-100);align-items:flex-end';
+
+  if(photo)
+    div.innerHTML += `<div style="text-align:center">
+      <img src="data:image/jpeg;base64,${photo}"
+           style="width:80px;height:100px;object-fit:cover;border:1px solid var(--gray-200);border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08)"/>
+      <div style="font-size:10px;font-weight:600;color:var(--gray-600);margin-top:5px;text-transform:uppercase;letter-spacing:.4px">Photo</div>
+    </div>`;
+
+  if(signature)
+    div.innerHTML += `<div style="text-align:center">
+      <img src="data:image/jpeg;base64,${signature}"
+           style="width:140px;height:60px;object-fit:contain;border:1px solid var(--gray-200);border-radius:6px;background:#fff;padding:4px"/>
+      <div style="font-size:10px;font-weight:600;color:var(--gray-600);margin-top:5px;text-transform:uppercase;letter-spacing:.4px">Signature</div>
+    </div>`;
+
+  infoGrid.after(div);
+}
+
+
+// ─── STUDENT GRIEVANCE FUNCTIONS ─────────────────────────────────────────────
+async function loadMyGrievances() {
+  if(!csStudent) return;
+  const listEl = document.getElementById('cs-grievance-list');
+  listEl.innerHTML = '<p style="color:var(--gray-400);font-size:13px">Loading…</p>';
+  const r = await callBackend('getMyGrievances', {rollFull: csStudent.rollFull});
+  if(!r.success) { listEl.innerHTML = '<p style="color:var(--danger)">Failed to load.</p>'; return; }
+  const list = r.grievances || [];
+  if(!list.length) { listEl.innerHTML = '<p style="color:var(--gray-400);font-size:13px">No grievances submitted yet.</p>'; return; }
+  const statusBadge = s => {
+    if(s==='resolved')  return '<span class="badge badge-approved">✅ Resolved</span>';
+    if(s==='in-review') return '<span class="badge" style="background:#eef3ff;color:#1a3a7c">🔍 In Review</span>';
+    if(s==='withdrawn') return '<span class="badge" style="background:var(--gray-100);color:var(--gray-600)">✕ Withdrawn</span>';
+    return '<span class="badge badge-pending">🕐 Pending</span>';
+  };
+  listEl.innerHTML = [...list].reverse().map(g => {
+    const canWithdraw = g.status === 'pending' || g.status === 'in-review';
+    const isResolved  = g.status === 'resolved';
+    const isWithdrawn = g.status === 'withdrawn';
+    const cardOpacity = (isResolved || isWithdrawn) ? 'opacity:0.75;' : '';
+    const replyHtml = g.wardenReply ? `<div style="border-left:3px solid var(--navy);padding:8px 12px;background:var(--info-bg);border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:13px;margin-top:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--navy);margin-bottom:4px">WARDEN'S REPLY · ${g.repliedAt ? new Date(g.repliedAt).toLocaleDateString('en-IN') : ''}</div>
+        ${g.wardenReply}
+      </div>` : '';
+    const withdrawBtn = canWithdraw ? `<button class="btn btn-secondary btn-sm"
+        style="font-size:11px;color:var(--danger);border-color:var(--danger);margin-top:10px"
+        onclick="withdrawGrievance('${g.grievanceId}', this)">✕ Withdraw</button>` : '';
+    return `<div style="border:1px solid ${isResolved ? 'var(--success)' : isWithdrawn ? 'var(--gray-200)' : 'var(--gray-100)'};border-radius:var(--radius-md);padding:14px 16px;margin-bottom:12px;${cardOpacity}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <div>
+          <span style="font-size:11px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.3px">${g.grievanceId}</span>
+          <div style="font-weight:600;font-size:14px;color:var(--navy);margin-top:2px">${g.subject}</div>
+          <div style="font-size:12px;color:var(--gray-600);margin-top:2px">📁 ${g.category} &nbsp;·&nbsp; ${g.submittedAt ? new Date(g.submittedAt).toLocaleDateString('en-IN') : ''}</div>
+        </div>
+        <div>${statusBadge(g.status)}</div>
+      </div>
+      <div style="font-size:13px;color:var(--gray-600);background:var(--gray-50);border-radius:var(--radius-sm);padding:10px 12px">${g.description}</div>
+      ${replyHtml}
+      ${withdrawBtn}
+    </div>`;
+  }).join('');
+}
+
+async function submitGrievance() {
+  if(!csStudent) return;
+  const category    = document.getElementById('grv-category')?.value;
+  const subject     = getVal('grv-subject');
+  const description = getVal('grv-description');
+  let ok = true;
+  if(!category) { showErr('grv-category','Please select a category'); document.getElementById('err-grv-category').classList.remove('hidden'); ok=false; } else clearErr('grv-category');
+  if(!subject || subject.length < 5) { showErr('grv-subject','Subject must be at least 5 characters'); document.getElementById('err-grv-subject').classList.remove('hidden'); ok=false; } else clearErr('grv-subject');
+  if(!description || description.length < 20) { showErr('grv-description','Description must be at least 20 characters'); document.getElementById('err-grv-description').classList.remove('hidden'); ok=false; } else clearErr('grv-description');
+  if(!ok) return;
+  const btn = document.getElementById('btn-submit-grv');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Submitting…';
+  const r = await callBackend('submitGrievance', {
+    rollFull: csStudent.rollFull, category, subject, description
+  });
+  btn.disabled = false; btn.innerHTML = 'Submit Grievance';
+  if(r.success) {
+    // Clear all form fields
+    document.getElementById('grv-category').value = '';
+    document.getElementById('grv-subject').value = '';
+    document.getElementById('grv-description').value = '';
+    // Hide form, show success banner
+    document.getElementById('grv-form-area').classList.add('hidden');
+    const banner = document.getElementById('grv-success-banner');
+    banner.classList.remove('hidden');
+    document.getElementById('grv-success-id').textContent = '🎫 Grievance ID: ' + r.grievanceId;
+    // Scroll success banner into view
+    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Refresh the grievance list above
+    loadMyGrievances();
+  } else {
+    showToast(r.error || 'Failed to submit.', 'error');
   }
+}
+
+async function withdrawGrievance(grievanceId, btnEl) {
+  if(!confirm('Are you sure you want to withdraw this grievance? This cannot be undone.')) return;
+  btnEl.disabled = true; btnEl.textContent = 'Withdrawing…';
+  const r = await callBackend('replyGrievance', { grievanceId, status: 'withdrawn' });
+  if(r.success) {
+    showToast('Grievance withdrawn successfully.', 'success');
+    loadMyGrievances();
+  } else {
+    btnEl.disabled = false; btnEl.textContent = '✕ Withdraw';
+    showToast(r.error || 'Failed to withdraw.', 'error');
+  }
+}
+
+// ─── WARDEN GRIEVANCE FUNCTIONS ───────────────────────────────────────────────
+let wrGrievancesCache = [];
+let wrGrievanceFilter = 'all';
+
+async function loadWardenGrievances() {
+  const listEl = document.getElementById('wr-grievance-list');
+  if(!listEl) return;
+  listEl.innerHTML = '<p style="color:var(--gray-400);font-size:13px">Loading…</p>';
+  const r = await callBackend('getAllGrievances', {});
+  if(!r.success) { listEl.innerHTML = '<p style="color:var(--danger)">Failed to load.</p>'; return; }
+  wrGrievancesCache = r.grievances || [];
+  // Update badge
+  const pending = wrGrievancesCache.filter(g => g.status === 'pending').length;
+  const badge = document.getElementById('wr-grv-badge');
+  if(badge) { badge.textContent = pending; badge.classList.toggle('hidden', pending === 0); }
+  renderWardenGrievances();
+}
+
+function filterGrievances(filter) {
+  wrGrievanceFilter = filter;
+  ['all','pending','in-review','resolved'].forEach(f => {
+    const btn = document.getElementById('grv-filter-' + f);
+    if(btn) btn.classList.toggle('btn-primary', f === filter);
+    if(btn) btn.classList.toggle('btn-secondary', f !== filter);
+  });
+  renderWardenGrievances();
+}
+
+function renderWardenGrievances() {
+  const listEl = document.getElementById('wr-grievance-list');
+  if(!listEl) return;
+  let list = wrGrievancesCache;
+  if(wrGrievanceFilter !== 'all') list = list.filter(g => g.status === wrGrievanceFilter);
+  list = [...list].reverse();
+  if(!list.length) {
+    listEl.innerHTML = '<p style="color:var(--gray-400);font-size:13px">No grievances found.</p>';
+    return;
+  }
+  const statusBadge = s => {
+    if(s==='resolved')  return '<span class="badge badge-approved">✅ Resolved</span>';
+    if(s==='in-review') return '<span class="badge" style="background:#eef3ff;color:#1a3a7c">🔍 In Review</span>';
+    return '<span class="badge badge-pending">🕐 Pending</span>';
+  };
+  listEl.innerHTML = list.map(g => {
+    const sid = g.grievanceId.split('/').join('-');
+    const statusBadgeHtml =
+      g.status==='resolved'  ? '<span class="badge badge-approved">✅ Resolved</span>' :
+      g.status==='in-review' ? '<span class="badge" style="background:#eef3ff;color:#1a3a7c">🔍 In Review</span>' :
+      g.status==='withdrawn' ? '<span class="badge" style="background:var(--gray-100);color:var(--gray-600)">✕ Withdrawn</span>' :
+                               '<span class="badge badge-pending">🕐 Pending</span>';
+    const prevReplyHtml = g.wardenReply ? `<div style="border-left:3px solid var(--success);padding:8px 12px;background:var(--success-bg);border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:13px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:600;color:var(--success);margin-bottom:4px">YOUR PREVIOUS REPLY · ${g.repliedAt ? new Date(g.repliedAt).toLocaleDateString('en-IN') : ''}</div>
+        ${g.wardenReply}
+      </div>` : '';
+    const pBtnStyle   = g.status==='pending'   ? 'background:var(--warning);color:#fff;'  : 'background:#fff;border-color:var(--warning);color:var(--warning);';
+    const rBtnStyle   = g.status==='in-review' ? 'background:var(--info);color:#fff;'     : 'background:#fff;border-color:var(--info);color:var(--info);';
+    const sBtnStyle   = g.status==='resolved'  ? 'background:var(--success);color:#fff;'  : 'background:#fff;border-color:var(--success);color:var(--success);';
+    return `<div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:16px;margin-bottom:14px" id="grv-card-${sid}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div>
+          <span style="font-size:11px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.3px">${g.grievanceId}</span>
+          <div style="font-weight:600;font-size:15px;color:var(--navy);margin-top:2px">${g.subject}</div>
+          <div style="font-size:12px;color:var(--gray-600);margin-top:3px">
+            👤 <strong>${g.studentName}</strong> · ${g.rollFull}
+            &nbsp;|&nbsp; 🏠 ${g.hostel || '—'} Room ${g.roomNo || '—'}
+            &nbsp;|&nbsp; 📁 ${g.category}
+            &nbsp;|&nbsp; ${g.submittedAt ? new Date(g.submittedAt).toLocaleDateString('en-IN') : ''}
+          </div>
+        </div>
+        <div>${statusBadgeHtml}</div>
+      </div>
+      <div style="font-size:13px;color:var(--gray-700);background:var(--gray-50);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px">${g.description}</div>
+      ${prevReplyHtml}
+      ${g.status === 'resolved' || g.status === 'withdrawn' ?
+        `<div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-md);padding:12px 14px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">${g.status === 'resolved' ? '✅' : '✕'}</span>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--gray-600)">${g.status === 'resolved' ? 'This grievance has been resolved.' : 'This grievance was withdrawn by the student.'}</div>
+            <div style="font-size:11px;color:var(--gray-400);margin-top:2px">Re-open by changing status to Pending or In Review.</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-left:auto;font-size:11px" onclick="quickSetGrvStatus('${g.grievanceId}','in-review')">🔄 Re-open</button>
+        </div>` :
+        `<div style="background:var(--gold-pale);border:1px solid var(--gold-light);border-radius:var(--radius-md);padding:12px 14px">
+          <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:8px">Update Status &amp; Reply</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <button class="btn btn-sm" onclick="quickSetGrvStatus('${g.grievanceId}','pending')" style="font-size:11px;${pBtnStyle}">🕐 Pending</button>
+            <button class="btn btn-sm" onclick="quickSetGrvStatus('${g.grievanceId}','in-review')" style="font-size:11px;${rBtnStyle}">🔍 In Review</button>
+            <button class="btn btn-sm" onclick="quickSetGrvStatus('${g.grievanceId}','resolved')" style="font-size:11px;${sBtnStyle}">✅ Resolved</button>
+          </div>
+          <textarea id="grv-reply-${sid}" rows="2"
+            style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical;margin-bottom:8px"
+            placeholder="Write your reply to the student…">${g.wardenReply || ''}</textarea>
+          <button class="btn btn-primary btn-sm" onclick="replyToGrievance('${g.grievanceId}')" id="grv-reply-btn-${sid}">Send Reply</button>
+        </div>`
+      }
+    </div>`;
+  }).join('');
+}
+
+async function quickSetGrvStatus(grievanceId, status) {
+  const r = await callBackend('replyGrievance', { grievanceId, status });
+  if(r.success) {
+    const g = wrGrievancesCache.find(x => x.grievanceId === grievanceId);
+    if(g) g.status = status;
+    renderWardenGrievances();
+    // Update badge
+    const pending = wrGrievancesCache.filter(g => g.status === 'pending').length;
+    const badge = document.getElementById('wr-grv-badge');
+    if(badge) { badge.textContent = pending; badge.classList.toggle('hidden', pending === 0); }
+  } else { showToast(r.error || 'Update failed', 'error'); }
+}
+
+async function replyToGrievance(grievanceId) {
+  const safeId = grievanceId.replace(/\//g, '-');
+  const replyEl = document.getElementById('grv-reply-' + safeId);
+  const btnEl   = document.getElementById('grv-reply-btn-' + safeId);
+  const reply   = replyEl ? replyEl.value.trim() : '';
+  if(!reply) { showToast('Please write a reply before sending.', 'error'); return; }
+  const g = wrGrievancesCache.find(x => x.grievanceId === grievanceId);
+  const status = g ? g.status : 'in-review';
+  if(btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<span class="spinner"></span>'; }
+  const r = await callBackend('replyGrievance', { grievanceId, status, reply });
+  if(btnEl) { btnEl.disabled = false; btnEl.innerHTML = 'Send Reply'; }
+  if(r.success) {
+    showToast('Reply sent successfully!', 'success');
+    if(g) { g.wardenReply = reply; g.repliedAt = new Date().toISOString(); }
+    renderWardenGrievances();
+  } else { showToast(r.error || 'Failed to send reply.', 'error'); }
 }
 
 // ─── STUDENT LEAVE FUNCTIONS ─────────────────────────────────────────────────
@@ -3050,7 +3788,14 @@ async function loadWardenLeaves() {
         <button class="btn btn-success btn-sm" onclick="decideLeave('${l.leaveId}','approved')" style="font-size:11px">✓ Approve</button>
         <button class="btn btn-danger btn-sm" onclick="promptRejectLeave('${l.leaveId}')" style="font-size:11px">✗ Reject</button>
       </div>`:'';
-    const dlBtn=l.status==='approved'&&l.driveUrl?`<a href="${l.driveUrl}" target="_blank" class="btn btn-secondary btn-sm" style="font-size:11px;margin-top:4px">📄 Download</a>`:'';
+    const dlBtn = l.status==='approved'
+      ? (l.driveUrl
+          ? `<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+               <a href="${l.driveUrl}" target="_blank" class="btn btn-secondary btn-sm" style="font-size:11px">📄 Download</a>
+               <button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="regenLeavePDF('${l.leaveId}',this)">🔄 Re-generate PDF</button>
+             </div>`
+          : `<button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="regenLeavePDF('${l.leaveId}',this)">📄 Generate PDF</button>`)
+      : '';
     return `<div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:12px;margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div style="flex:1">
@@ -3088,12 +3833,906 @@ async function decideLeave(leaveId, decision, reason) {
   }
 }
 function promptRejectLeave(leaveId) {
-  const reason=prompt('Enter reason for rejecting this leave:');
-  if(reason===null) return;
-  if(!reason.trim()){toast('Rejection reason required.','error');return;}
-  decideLeave(leaveId,'rejected',reason);
+  openReasonModal({
+    title: 'Reject Leave Application',
+    label: 'Rejection Reason',
+    placeholder: 'e.g. Incomplete details, clash with exam schedule...',
+    required: true,
+    confirmLabel: '✗ Reject Leave',
+    confirmClass: 'btn-danger',
+    onConfirm: (reason) => decideLeave(leaveId, 'rejected', reason)
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// ADMIN OFFICE PORTAL
+// ══════════════════════════════════════════════════════════
+
+let admStudents = [];
+let admStudentsLoaded = false;
+let admAllGrievances = [];
+let admAllLeaves = [];
+
+async function adminLogin() {
+  const id   = document.getElementById('adm-id')?.value.trim();
+  const pass = document.getElementById('adm-pass')?.value;
+  const errEl = document.getElementById('err-adm-login');
+  errEl.classList.add('hidden');
+  if(!id || !pass) {
+    errEl.textContent = 'Admin ID and password are required.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  const btn = document.querySelector('#adm-login .btn-primary');
+  if(btn) { btn.disabled=true; btn.innerHTML='<span class="spinner spinner-dark"></span> Verifying…'; }
+  const r = await callBackend('adminLogin', {adminId:id, adminPass:pass});
+  if(btn) { btn.disabled=false; btn.textContent='Login to Admin Portal'; }
+  if(r.success) {
+    errEl.classList.add('hidden');
+    document.getElementById('adm-login').classList.add('hidden');
+    document.getElementById('adm-dashboard').classList.remove('hidden');
+    admLoadData();
+  } else {
+    errEl.textContent = r.error || 'Invalid Admin ID or password.';
+    errEl.classList.remove('hidden');
+  }
+}
+
+function adminLogout() {
+  document.getElementById('adm-dashboard').classList.add('hidden');
+  document.getElementById('adm-login').classList.remove('hidden');
+  document.getElementById('adm-id').value='';
+  document.getElementById('adm-pass').value='';
+  admStudents=[]; admStudentsLoaded=false; admAllGrievances=[]; admAllLeaves=[];
+}
+
+async function admLoadData() {
+  const r = await callBackend('getAllStudents');
+  if(r.success) {
+    admStudents = r.students || [];
+    admStudentsLoaded = true;
+    admRenderStats();
+    admRenderPayList();
+  }
+  const lr = await callBackend('getAllLeaves');
+  if(lr.success) {
+    admAllLeaves = lr.leaves || [];
+    const pendingLeaves = admAllLeaves.filter(l=>l.status==='pending').length;
+    const badge = document.getElementById('adm-leave-badge');
+    if(badge) { badge.textContent=pendingLeaves; badge.style.display=pendingLeaves?'':'none'; }
+  }
+  const gr = await callBackend('getAllGrievances');
+  if(gr.success) {
+    admAllGrievances = gr.grievances || [];
+    const pendingGrv = admAllGrievances.filter(g=>g.status==='pending').length;
+    const badge = document.getElementById('adm-grv-badge');
+    if(badge) { badge.textContent=pendingGrv; badge.style.display=pendingGrv?'':'none'; }
+  }
+}
+
+function admRenderStats() {
+  const total    = admStudents.length;
+  const pending  = admStudents.filter(s=>s.status==='pending').length;
+  const approved = admStudents.filter(s=>s.status==='approved').length;
+  const pendingPay = admStudents.reduce((acc,s)=>{
+    const pays = Array.isArray(s.payments)?s.payments:[];
+    return acc + pays.filter(p=>p.status==='pending').length;
+  },0);
+  document.getElementById('adm-stats').innerHTML = [
+    ['Total Students', total],
+    ['Pending Applications', pending],
+    ['Approved Students', approved],
+    ['Pending Payments', pendingPay]
+  ].map(([l,v])=>`<div class="stat-card"><div class="val">${v}</div><div class="lbl">${l}</div></div>`).join('');
+  const payBadge = document.getElementById('adm-pay-badge');
+  if(payBadge) { payBadge.textContent=pendingPay; payBadge.style.display=pendingPay?'':'none'; }
+}
+
+function admTab(name) {
+  ['payments','allotment','unlock','leaves','grievances','nodues'].forEach(t=>{
+    const el = document.getElementById('adm-tab-'+t);
+    if(el) el.classList.toggle('hidden', t!==name);
+  });
+  document.querySelectorAll('#adm-dashboard .tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', ['payments','allotment','unlock','leaves','grievances','nodues'][i]===name);
+  });
+  if(name==='payments') admRenderPayList();
+  else if(name==='allotment') admRenderAllotmentList();
+  else if(name==='leaves') admRenderLeaves();
+  else if(name==='grievances') { admFilterGrievances('all'); }
+  else if(name==='unlock') {
+    document.getElementById('adm-unlock-email').value='';
+    document.getElementById('adm-unlock-masterkey').value='';
+    document.getElementById('adm-unlock-result').innerHTML='';
+  }
+  else if(name==='nodues') {
+    document.getElementById('adm-nd-result').classList.add('hidden');
+    // Reset all inspection radios to OK
+    ['room','bed','chair','table'].forEach(item=>{
+      const el = document.querySelector(`input[name="adm-insp-${item}"][value="ok"]`);
+      if(el) el.checked=true;
+      admInspToggle(item, false);
+    });
+  }
+}
+
+// ── PAYMENT VERIFICATION (Admin) ──
+function admRenderPayList() {
+  const list = document.getElementById('adm-pay-list');
+  if(!list) return;
+  const studentsWithPending = admStudents.filter(s=>{
+    const pays = Array.isArray(s.payments)?s.payments:[];
+    return pays.some(p=>p.status==='pending'||p.status==='rejected');
+  });
+  if(!studentsWithPending.length) {
+    list.innerHTML='<div class="alert alert-success">✅ No pending payment verifications. All receipts have been reviewed.</div>';
+    return;
+  }
+  list.innerHTML = studentsWithPending.map(s=>{
+    const allPays = (Array.isArray(s.payments)?s.payments:[]).map((p,i)=>({...p,_idx:i}));
+    const pendingPays  = allPays.filter(p=>p.status==='pending');
+    const rejectedPays = allPays.filter(p=>p.status==='rejected');
+    const isAdmission  = allPays.some(p=>p.note && p.note.includes('Admission'));
+    const safeRoll     = s.rollFull.replace(/\//g,'_');
+
+    const makePayRow = (p, isRejected) => `
+      <div style="background:${isRejected?'var(--danger-bg)':'var(--gray-50)'};border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;border:1px solid ${isRejected?'var(--danger)':'var(--gray-100)'}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600">Semester ${p.semester} — ₹${p.amount||4500}
+              ${isRejected?'<span class="badge badge-rejected" style="margin-left:6px;font-size:10px">Rejected</span>':''}
+            </div>
+            <div style="font-size:11px;color:var(--gray-600)">Receipt: <strong>${p.receipt||'—'}</strong> · ${p.paidAt?new Date(p.paidAt).toLocaleDateString('en-IN'):''}</div>
+            ${isRejected && p.rejectionComment ? `<div style="font-size:11px;color:var(--danger);margin-top:3px;font-weight:500">✗ Reason given: ${p.rejectionComment}</div>` : ''}
+            ${!isAdmission ? `
+            <div style="margin-top:8px">
+              <button class="btn btn-secondary btn-sm" style="font-size:10px"
+                onclick="admLoadSinglePayImage('${s.rollFull}',${p.semester},'adm-payimg-${safeRoll}-${p._idx}')">🖼 View Receipt</button>
+              <div id="adm-payimg-${safeRoll}-${p._idx}" style="margin-top:6px"></div>
+            </div>` : ''}
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;flex-direction:column;align-items:flex-end">
+            <button class="btn btn-success btn-sm" style="font-size:11px" onclick="admApprovePayment('${s.rollFull}',${p._idx})">✓ ${isRejected?'Re-approve':'Verify'}</button>
+            ${!isRejected?`<button class="btn btn-danger btn-sm" style="font-size:11px" onclick="admRejectPayment('${s.rollFull}',${p._idx})">✗ Reject</button>`:''}
+          </div>
+        </div>
+      </div>`;
+
+    return `<div class="admin-task-card">
+      <div class="task-header">
+        <div>
+          <div style="font-weight:700;font-size:14px">${s.name}</div>
+          <div class="task-meta">${s.rollFull} · <span class="badge badge-${s.status||'pending'}">${s.status||'pending'}</span></div>
+          ${isAdmission?`<div style="font-size:11px;color:var(--info);margin-top:3px;font-weight:600">📋 Admission — Reg. Fee + Caution Money + Allotment Fee</div>`:''}
+        </div>
+        <div style="font-size:12px;color:var(--gray-400)">Sem ${s.semesterNo||'—'}</div>
+      </div>
+
+      ${isAdmission ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;font-size:12px">
+        <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:8px">
+          <div style="color:var(--gray-600);margin-bottom:2px">Reg. Fee Receipt</div>
+          <strong>${s.regFeeReceipt||'—'}</strong>
+        </div>
+        <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:8px">
+          <div style="color:var(--gray-600);margin-bottom:2px">Caution Money Receipt</div>
+          <strong>${s.cautionFeeReceipt||'—'}</strong>
+        </div>
+        <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:8px">
+          <div style="color:var(--gray-600);margin-bottom:2px">Allotment Fee Receipt</div>
+          <strong>${pendingPays[0]?.receipt||rejectedPays[0]?.receipt||'—'}</strong>
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <button class="btn btn-secondary btn-sm" style="font-size:11px"
+          onclick="admLoadAdmissionImages('${s.rollFull}','adm-img-${safeRoll}')">🖼 View All Receipt Images</button>
+        <div id="adm-img-${safeRoll}" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px"></div>
+      </div>` : ''}
+
+      ${pendingPays.length ? `<div style="font-size:11px;font-weight:700;color:var(--gray-600);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px">Pending Verification</div>` : ''}
+      ${pendingPays.map(p=>makePayRow(p,false)).join('')}
+
+      ${rejectedPays.length ? `<div style="font-size:11px;font-weight:700;color:var(--danger);margin-bottom:6px;margin-top:10px;text-transform:uppercase;letter-spacing:.3px">⚠ Rejected — Awaiting Resubmission</div>` : ''}
+      ${rejectedPays.map(p=>makePayRow(p,true)).join('')}
+    </div>`;
+  }).join('');
+}
+
+// Load all three admission receipt images (reg fee, caution money, allotment fee) for admin view
+async function admLoadAdmissionImages(rollFull, containerId) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = '<div style="grid-column:1/-1;font-size:12px;color:var(--gray-400)"><span class="spinner spinner-dark"></span> Loading receipt images…</div>';
+  const imgR = await callBackend('getStudentImages', {rollFull});
+  if(!imgR.success || !imgR.images) {
+    container.innerHTML = '<div style="grid-column:1/-1" class="alert alert-danger">Could not load images.</div>';
+    return;
+  }
+  const imgs = imgR.images;
+  const slots = [
+    { key:'regFeeImage',     label:'Reg. Fee Receipt'     },
+    { key:'cautionFeeImage', label:'Caution Money Receipt' },
+    { key:'allotFeeImage',   label:'Allotment Fee Receipt' }
+  ];
+  container.innerHTML = slots.map(({key, label})=>{
+    const b64 = imgs[key];
+    if(!b64) return `<div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:10px;text-align:center;font-size:11px;color:var(--gray-400)">${label}<br/><em>No image</em></div>`;
+    return `<div style="text-align:center">
+      <img src="data:image/jpeg;base64,${b64}" alt="${label}"
+        style="width:100%;max-height:140px;object-fit:contain;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);cursor:pointer;background:#fff"
+        onclick="openImageModal('data:image/jpeg;base64,${b64}','${label}')"/>
+      <div style="font-size:10px;color:var(--gray-600);margin-top:4px;font-weight:600">${label}</div>
+      <div style="font-size:10px;color:var(--gray-400)">Tap to enlarge</div>
+    </div>`;
+  }).join('');
+}
+
+// Load a single semester payment receipt image (for non-admission semester payments)
+async function admLoadSinglePayImage(rollFull, semester, containerId) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = '<span style="font-size:11px;color:var(--gray-400)"><span class="spinner spinner-dark"></span> Loading…</span>';
+  const imgR = await callBackend('getStudentImages', {rollFull});
+  if(!imgR.success || !imgR.images) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--danger)">Could not load image.</span>';
+    return;
+  }
+  const b64 = imgR.images['payment_sem_'+semester] || imgR.images['allotFeeImage'];
+  if(!b64) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--gray-400)">No receipt image uploaded.</span>';
+    return;
+  }
+  container.innerHTML = `
+    <img src="data:image/jpeg;base64,${b64}" alt="Semester ${semester} Receipt"
+      style="max-width:180px;max-height:130px;object-fit:contain;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);cursor:pointer;display:block"
+      onclick="openImageModal('data:image/jpeg;base64,${b64}','Semester ${semester} Receipt')"/>
+    <div style="font-size:10px;color:var(--gray-400);margin-top:3px">Tap to enlarge</div>`;
+}
+
+async function admApprovePayment(rollFull, paymentIndex) {
+  const r = await callBackend('approvePayment', {rollFull, paymentIndex});
+  if(r.success) {
+    toast('Payment verified ✓', 'success');
+    const rd = await callBackend('getAllStudents');
+    if(rd.success) { admStudents=rd.students; admRenderStats(); admRenderPayList(); }
+  } else {
+    toast('Failed: '+(r.error||''), 'error');
+  }
+}
+
+async function admRejectPayment(rollFull, paymentIndex) {
+  openReasonModal({
+    title: 'Reject Fee Receipt',
+    label: 'Rejection Reason (student will see this)',
+    placeholder: 'e.g. Receipt number does not match bank records, image unclear...',
+    required: true,
+    confirmLabel: '✗ Reject Receipt',
+    confirmClass: 'btn-danger',
+    onConfirm: async (comment) => {
+      const r = await callBackend('rejectPayment', {rollFull, paymentIndex, comment});
+      if(r.success) {
+        toast('Receipt rejected. Student will be notified.', 'error');
+        const rd = await callBackend('getAllStudents');
+        if(rd.success) { admStudents=rd.students; admRenderStats(); admRenderPayList(); }
+      } else { toast('Failed: '+(r.error||''), 'error'); }
+    }
+  });
+}
+
+// ── ACCOUNT UNLOCK (Admin) ──
+async function adminUnlockAccount() {
+  const email     = document.getElementById('adm-unlock-email')?.value.trim();
+  const masterKey = document.getElementById('adm-unlock-masterkey')?.value||'';
+  const resultDiv = document.getElementById('adm-unlock-result');
+  let ok=true;
+  if(!email) { showErr('adm-unlock-email','Student email required'); document.getElementById('err-adm-unlock-email').classList.remove('hidden'); ok=false; } else clearErr('adm-unlock-email');
+  if(!masterKey) { showErr('adm-unlock-key','Master key required'); document.getElementById('err-adm-unlock-key').classList.remove('hidden'); ok=false; } else clearErr('adm-unlock-key');
+  if(!ok) return;
+  const btn = document.getElementById('btn-adm-unlock');
+  btn.disabled=true; btn.innerHTML='<span class="spinner spinner-dark"></span> Unlocking…';
+  const r = await callBackend('adminUnlockAccount', {email, masterKey});
+  btn.disabled=false; btn.innerHTML='🔓 Unlock Account';
+  if(r.success) {
+    resultDiv.innerHTML=`<div class="alert alert-success">✅ Account for <strong>${email}</strong> has been successfully unlocked. The student can now login normally.<br/><small style="opacity:.7">Action logged by Admin Office.</small></div>`;
+    document.getElementById('adm-unlock-email').value='';
+    document.getElementById('adm-unlock-masterkey').value='';
+  } else {
+    resultDiv.innerHTML=`<div class="alert alert-danger">⚠ ${r.error||'Failed to unlock account.'}</div>`;
+  }
+}
+
+// ── LEAVE REVIEW (Admin) ──
+async function admRenderLeaves() {
+  const pendingEl = document.getElementById('adm-leave-pending');
+  const allEl     = document.getElementById('adm-leave-all');
+  if(!pendingEl) return;
+  // Refresh leave data
+  const lr = await callBackend('getAllLeaves');
+  if(!lr.success) {
+    pendingEl.innerHTML = `<div class="alert alert-danger">Failed to load leaves: ${lr.error||''}</div>`;
+    return;
+  }
+  admAllLeaves = lr.leaves || [];
+  const pending = admAllLeaves.filter(l=>l.status==='pending');
+  const others  = admAllLeaves.filter(l=>l.status!=='pending');
+
+  const badge = document.getElementById('adm-leave-badge');
+  if(badge) { badge.textContent=pending.length; badge.style.display=pending.length?'':'none'; }
+
+  const makeRow = (l, showForward) => {
+    const statusClass = l.status==='approved'?'badge-approved':l.status==='rejected'?'badge-rejected':'badge-pending';
+    const alreadyFwd  = String(l.rejectionReason||'').startsWith('[ADMIN-FWD]');
+    const fwdNote     = alreadyFwd
+      ? `<div style="font-size:11px;color:var(--info);margin-top:4px;font-style:italic">📋 Forwarded to Warden by Admin Office</div>`
+      : '';
+    const fwdBtn = showForward && !alreadyFwd
+      ? `<button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="admForwardLeave('${l.leaveId}')">📤 Forward to Warden</button>`
+      : '';
+    return `<div class="admin-task-card">
+      <div class="task-header">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:var(--navy)">${l.leaveId}</div>
+          <div style="font-weight:600;font-size:13px">${l.studentName} · ${l.rollFull}</div>
+          <div class="task-meta">${l.reason} · ${fmtDMY(l.departureDt)} → ${fmtDMY(l.returnDt)} (${l.totalDays}d)</div>
+          <div class="task-meta">Room: ${l.hostel||'—'} ${l.roomNo||''} · Mobile: ${l.mobile||'—'}</div>
+          <div class="task-meta">Address: ${l.addressDuringLeave||'—'}</div>
+          ${fwdNote}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="badge ${statusClass}">${l.status}</span>
+          ${fwdBtn}
+        </div>
+      </div>
+    </div>`;
+  };
+
+  pendingEl.innerHTML = pending.length
+    ? pending.map(l=>makeRow(l,true)).join('')
+    : '<p style="color:var(--gray-400);font-size:13px">No pending leave applications.</p>';
+  allEl.innerHTML = others.length
+    ? others.slice().reverse().map(l=>makeRow(l,false)).join('')
+    : '<p style="color:var(--gray-400);font-size:13px">No decided leave applications yet.</p>';
+}
+
+async function admForwardLeave(leaveId) {
+  openReasonModal({
+    title: 'Forward Leave to Warden',
+    label: 'Forwarding Note (optional)',
+    placeholder: 'e.g. Student eligibility verified, no pending dues, forwarding for decision...',
+    required: false,
+    confirmLabel: '📤 Forward to Warden',
+    confirmClass: 'btn-primary',
+    onConfirm: async (note) => {
+      const r = await callBackend('adminForwardLeave', {
+        leaveId,
+        note: note.trim() || 'Reviewed by Admin Office. Eligibility OK. Forwarded to Warden for decision.'
+      });
+      if(r.success) {
+        toast('Leave forwarded to Warden ✓','success');
+        admRenderLeaves();
+      } else { toast('Failed: '+(r.error||''),'error'); }
+    }
+  });
+}
+
+// ── GRIEVANCE INTAKE (Admin) ──
+function admFilterGrievances(status) {
+  ['all','pending','in-review','resolved'].forEach(f=>{
+    const btn = document.getElementById('adm-grv-f-'+f);
+    if(btn) btn.classList.toggle('btn-primary', f===status);
+    if(btn) btn.classList.toggle('btn-secondary', f!==status);
+  });
+  const list = document.getElementById('adm-grievance-list');
+  if(!list) return;
+  const data = status==='all' ? admAllGrievances : admAllGrievances.filter(g=>g.status===status);
+  if(!data.length) {
+    list.innerHTML='<p style="color:var(--gray-400);font-size:13px">No grievances found.</p>';
+    return;
+  }
+  list.innerHTML = data.slice().reverse().map(g=>{
+    const statusClass = g.status==='resolved'?'badge-approved':g.status==='in-review'?'badge-pending':'badge-pending';
+    const alreadyLogged = String(g.wardenReply||'').includes('[ADMIN');
+    return `<div class="admin-task-card">
+      <div class="task-header">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:var(--navy)">${g.grievanceId}</div>
+          <div style="font-weight:600;font-size:13px">${g.studentName} · ${g.rollFull}</div>
+          <div class="task-meta">${g.category} — ${g.subject}</div>
+          <div class="task-meta" style="margin-top:4px">${g.description}</div>
+          ${g.wardenReply?`<div style="font-size:11px;color:var(--gray-600);margin-top:6px;font-style:italic;border-left:2px solid var(--gray-200);padding-left:8px">${g.wardenReply.replace(/\n/g,'<br>')}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="badge ${statusClass}">${g.status}</span>
+          ${!alreadyLogged && g.status==='pending'
+            ? `<button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="admLogGrievanceNote('${g.grievanceId}')">📋 Log Note</button>`
+            : alreadyLogged ? `<span style="font-size:10px;color:var(--info)">Note logged</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function admLogGrievanceNote(grievanceId) {
+  openReasonModal({
+    title: 'Log Grievance Intake Note',
+    label: 'Intake Note for Warden',
+    placeholder: 'e.g. Student visited in person, complaint verified, categorised as maintenance issue, urgent...',
+    required: true,
+    confirmLabel: '📋 Log Note',
+    confirmClass: 'btn-primary',
+    onConfirm: async (note) => {
+      const r = await callBackend('adminLogNote', {grievanceId, note});
+      if(r.success) {
+        toast('Note logged. Grievance marked in-review ✓','success');
+        const gr = await callBackend('getAllGrievances');
+        if(gr.success) { admAllGrievances=gr.grievances||[]; admFilterGrievances('all'); }
+      } else { toast('Failed: '+(r.error||''),'error'); }
+    }
+  });
+}
+
+// ── ALLOTMENT PRE-FILL (Admin) ──
+function admRenderAllotmentList() {
+  const list = document.getElementById('adm-allot-list');
+  if(!list) return;
+  const pending = admStudents.filter(s=>s.status==='pending');
+  if(!pending.length) {
+    list.innerHTML='<div class="alert alert-success">No pending applications at the moment.</div>';
+    return;
+  }
+  list.innerHTML = pending.map(s=>{
+    const hi = s.hostelInfo;
+    const prefilled = hi && hi.roomNo;
+    return `<div class="admin-task-card">
+      <div class="task-header">
+        <div>
+          <div style="font-weight:700;font-size:14px">${s.name}</div>
+          <div class="task-meta">${s.rollFull} · Sem ${s.semesterNo||'—'}</div>
+          <div class="task-meta" style="margin-top:4px">${prefilled
+            ? `<span style="color:var(--success);font-weight:600">✓ Pre-filled:</span> ${hi.hostel} · Room ${hi.roomNo} · Bed ${hi.bedNo||'—'} · Chair ${hi.chairNo||'—'} · Table ${hi.tableNo||'—'}`
+            : '<span style="color:var(--warning)">⚠ Accommodation not yet filled</span>'}</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="admAllotPrefill('${s.rollFull}')">
+          ${prefilled?'✏ Edit':'+ Fill'} Room
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function admAllotPrefill(rollFull) {
+  const s = admStudents.find(x=>x.rollFull===rollFull);
+  if(!s) return;
+  const no = rollFull.split('/')[0]||'';
+  const br = rollFull.split('/')[1]||'CSE';
+  const yr = rollFull.split('/')[2]||'';
+  document.getElementById('adm-allot-roll-no').value   = no;
+  document.getElementById('adm-allot-roll-branch').value= br;
+  document.getElementById('adm-allot-roll-year').value  = yr;
+  admAllotSearch();
+}
+
+async function admAllotSearch() {
+  const no = document.getElementById('adm-allot-roll-no')?.value.trim();
+  const br = document.getElementById('adm-allot-roll-branch')?.value;
+  const yr = document.getElementById('adm-allot-roll-year')?.value.trim();
+  if(!no||!yr) { toast('Enter complete roll number','error'); return; }
+  const rollFull = `${no}/${br}/${yr}`;
+  const s = admStudents.find(x=>x.rollFull===rollFull);
+  const resultDiv = document.getElementById('adm-allot-result');
+  const infoDiv   = document.getElementById('adm-allot-student-info');
+  const msgDiv    = document.getElementById('adm-allot-msg');
+  msgDiv.innerHTML='';
+
+  if(!s) {
+    infoDiv.innerHTML=`<div class="alert alert-danger">Student not found in current data. Only approved/pending students are listed.</div>`;
+    resultDiv.classList.remove('hidden'); return;
+  }
+  if(s.status==='alumni') {
+    infoDiv.innerHTML=`<div class="alert alert-warning">This student is an alumni. Accommodation edits are done via Warden panel.</div>`;
+    resultDiv.classList.remove('hidden'); return;
+  }
+
+  const hi = s.hostelInfo||{};
+  infoDiv.innerHTML = `
+    <div class="info-grid">
+      <div class="info-item"><div class="key">Student</div><div class="val">${s.name}</div></div>
+      <div class="info-item"><div class="key">Roll No.</div><div class="val">${s.rollFull}</div></div>
+      <div class="info-item"><div class="key">Status</div><div class="val"><span class="badge badge-${s.status||'pending'}">${s.status||'pending'}</span></div></div>
+      <div class="info-item"><div class="key">Semester</div><div class="val">${s.semesterNo||'—'}</div></div>
+    </div>`;
+
+  // Pre-populate form with existing hostelInfo if any
+  if(hi.hostel) {
+    const hSel = document.getElementById('adm-allot-hostel');
+    if(hSel) for(let o of hSel.options) if(o.value===hi.hostel) o.selected=true;
+  }
+  document.getElementById('adm-allot-room').value  = hi.roomNo  ||'';
+  document.getElementById('adm-allot-bed').value   = hi.bedNo   ||'';
+  document.getElementById('adm-allot-chair').value = hi.chairNo ||'';
+  document.getElementById('adm-allot-table').value = hi.tableNo ||'';
+  resultDiv.classList.remove('hidden');
+}
+
+async function admSaveAllotment() {
+  const no = document.getElementById('adm-allot-roll-no')?.value.trim();
+  const br = document.getElementById('adm-allot-roll-branch')?.value;
+  const yr = document.getElementById('adm-allot-roll-year')?.value.trim();
+  const rollFull = `${no}/${br}/${yr}`;
+  const hostelInfo = {
+    hostel:  document.getElementById('adm-allot-hostel')?.value,
+    roomNo:  document.getElementById('adm-allot-room')?.value.trim(),
+    bedNo:   document.getElementById('adm-allot-bed')?.value.trim(),
+    chairNo: document.getElementById('adm-allot-chair')?.value.trim(),
+    tableNo: document.getElementById('adm-allot-table')?.value.trim()
+  };
+  let ok=true;
+  if(!hostelInfo.roomNo)  { showErr('adm-allot-room','Room required');  document.getElementById('err-adm-allot-room').classList.remove('hidden');  ok=false; } else clearErr('adm-allot-room');
+  if(!hostelInfo.bedNo)   { showErr('adm-allot-bed','Bed required');    document.getElementById('err-adm-allot-bed').classList.remove('hidden');   ok=false; } else clearErr('adm-allot-bed');
+  if(!hostelInfo.chairNo) { showErr('adm-allot-chair','Chair required');document.getElementById('err-adm-allot-chair').classList.remove('hidden'); ok=false; } else clearErr('adm-allot-chair');
+  if(!hostelInfo.tableNo) { showErr('adm-allot-table','Table required');document.getElementById('err-adm-allot-table').classList.remove('hidden'); ok=false; } else clearErr('adm-allot-table');
+  if(!ok) return;
+
+  const btn = document.getElementById('btn-adm-allot');
+  btn.disabled=true; btn.innerHTML='<span class="spinner spinner-dark"></span> Saving…';
+  const r = await callBackend('adminAllotAccommodation', {rollFull, hostelInfo});
+  btn.disabled=false; btn.innerHTML='💾 Save Accommodation — Forward to Warden';
+
+  const msgDiv = document.getElementById('adm-allot-msg');
+  if(r.success) {
+    msgDiv.innerHTML=`<div class="alert alert-success">✅ Accommodation saved. Warden can now see pre-filled details and approve.<br/><small style="opacity:.7">Room: ${hostelInfo.hostel} · ${hostelInfo.roomNo} · Bed ${hostelInfo.bedNo} · Chair ${hostelInfo.chairNo} · Table ${hostelInfo.tableNo}</small></div>`;
+    toast('Accommodation forwarded to Warden ✓','success');
+    // Refresh local student cache
+    const rd = await callBackend('getAllStudents');
+    if(rd.success) { admStudents=rd.students; admRenderAllotmentList(); }
+  } else {
+    msgDiv.innerHTML=`<div class="alert alert-danger">⚠ ${r.error||'Failed to save.'}</div>`;
+  }
+}
+
+// ── NO DUES PRE-CHECK with physical inspection (Admin) ──
+function admInspToggle(item, damaged) {
+  const wrap = document.getElementById('adm-insp-note-wrap-'+item);
+  const card = document.getElementById('adm-insp-card-'+item);
+  if(!wrap) return;
+  wrap.classList.toggle('hidden', !damaged);
+  if(card) {
+    card.style.borderColor = damaged ? 'var(--danger)' : 'var(--gray-100)';
+    card.style.background  = damaged ? 'var(--danger-bg)' : '';
+  }
+}
+
+let admNdCurrentRoll = null;
+
+async function admNdFetchStudent() {
+  const no = document.getElementById('adm-nd-roll-no')?.value.trim();
+  const br = document.getElementById('adm-nd-roll-branch')?.value;
+  const yr = document.getElementById('adm-nd-roll-year')?.value.trim();
+  if(!no||!yr) { toast('Enter complete roll number','error'); return; }
+  admNdCurrentRoll = `${no}/${br}/${yr}`;
+  const s = admStudents.find(x=>x.rollFull===admNdCurrentRoll);
+  const resultDiv = document.getElementById('adm-nd-result');
+  const infoDiv   = document.getElementById('adm-nd-student-info');
+  const finDiv    = document.getElementById('adm-nd-financial');
+  document.getElementById('adm-nd-final-result').innerHTML='';
+
+  if(!s) {
+    infoDiv.innerHTML=`<div class="alert alert-danger">Student not found.</div>`;
+    finDiv.innerHTML=''; resultDiv.classList.remove('hidden'); return;
+  }
+
+  const hi = s.hostelInfo||{};
+  infoDiv.innerHTML = `
+    <div class="info-grid">
+      <div class="info-item"><div class="key">Student</div><div class="val">${s.name}</div></div>
+      <div class="info-item"><div class="key">Roll No.</div><div class="val">${s.rollFull}</div></div>
+      <div class="info-item"><div class="key">Status</div><div class="val"><span class="badge badge-${s.status==='approved'?'approved':'pending'}">${s.status}</span></div></div>
+      <div class="info-item"><div class="key">Hostel / Room</div><div class="val">${hi.hostel||'—'} / ${hi.roomNo||'—'}</div></div>
+      <div class="info-item"><div class="key">Bed</div><div class="val">${hi.bedNo||'—'}</div></div>
+      <div class="info-item"><div class="key">Chair / Table</div><div class="val">${hi.chairNo||'—'} / ${hi.tableNo||'—'}</div></div>
+    </div>`;
+
+  // Financial snapshot from local cache
+  const payments = Array.isArray(s.payments)?s.payments:[];
+  const fines    = Array.isArray(s.fines)?s.fines:[];
+  const outstanding = fines.reduce((a,f)=>a+(f.revoked||(f.paid&&f.paymentVerified)?0:Number(f.amount||0)),0);
+  const pendingPay  = payments.filter(p=>p.status==='pending').length;
+  const approvedPay = payments.filter(p=>p.status==='approved').length;
+  finDiv.innerHTML = `
+    <div class="section-heading">Financial Pre-Check (Auto)</div>
+    <div class="dues-check-row ${outstanding===0?'dues-ok':'dues-bad'}">Outstanding Fines <strong>${outstanding===0?'NIL':'₹'+outstanding}</strong></div>
+    <div class="dues-check-row ${pendingPay===0?'dues-ok':'dues-bad'}">Pending Payments <strong>${pendingPay===0?'NIL':pendingPay+' unverified'}</strong></div>
+    <div class="dues-check-row ${approvedPay>0?'dues-ok':'dues-bad'}">Verified Payments <strong>${approvedPay} approved</strong></div>`;
+
+  resultDiv.classList.remove('hidden');
+}
+
+async function admRunNoDuesCheck() {
+  if(!admNdCurrentRoll) { toast('Fetch a student first','error'); return; }
+  const inspection = {};
+  let validationOk = true;
+  for(const item of ['room','bed','chair','table']) {
+    const isDamaged = document.querySelector(`input[name="adm-insp-${item}"]:checked`)?.value === 'damaged';
+    const note = document.getElementById('adm-insp-note-'+item)?.value.trim()||'';
+    if(isDamaged && !note) {
+      toast(`Please describe the ${item} damage before running the check.`,'error');
+      validationOk = false; break;
+    }
+    inspection[item] = { damaged: isDamaged, note };
+  }
+  if(!validationOk) return;
+
+  const btn = document.getElementById('btn-adm-nd-check');
+  btn.disabled=true; btn.innerHTML='<span class="spinner spinner-dark"></span> Running check…';
+  const r = await callBackend('adminNoDuesFullCheck', {rollFull:admNdCurrentRoll, inspection});
+  btn.disabled=false; btn.innerHTML='🔍 Run Full Pre-Check';
+
+  const finalDiv = document.getElementById('adm-nd-final-result');
+  if(!r.success) { finalDiv.innerHTML=`<div class="alert alert-danger">⚠ ${r.error||'Failed.'}</div>`; return; }
+
+  let html = '';
+  // Physical damage results
+  if(r.damages && r.damages.length > 0) {
+    html += `<div class="section-heading" style="margin-top:16px;color:var(--danger)">⚠ Damage Found — Fine Suggestions for Warden</div>`;
+    html += `<div style="background:var(--danger-bg);border:1px solid var(--danger);border-radius:var(--radius-md);padding:14px;margin-bottom:12px">
+      <p style="font-size:13px;color:var(--danger);margin-bottom:10px">The following damage was recorded during physical inspection. Please inform the Warden to impose fines before issuing No Dues:</p>
+      <table class="data-table">
+        <thead><tr><th>Item</th><th>Damage Note</th><th>Suggested Fine</th></tr></thead>
+        <tbody>
+          ${r.damages.map(d=>`<tr>
+            <td style="font-weight:600;text-transform:capitalize">${d.label}</td>
+            <td>${d.note||'—'}</td>
+            <td style="color:var(--danger);font-weight:700">₹${d.suggestedAmount}</td>
+          </tr>`).join('')}
+          <tr style="background:var(--danger-bg)">
+            <td colspan="2" style="font-weight:700;color:var(--danger)">Total Suggested Fine</td>
+            <td style="font-weight:700;color:var(--danger)">₹${r.suggestedFineTotal}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="admin-delegation-note" style="margin-top:10px;margin-bottom:0">
+        📋 Please inform the Warden to impose ₹${r.suggestedFineTotal} in damage fines before issuing the No Dues Certificate.
+        The warden must impose these fines from the <strong>Warden Dashboard → Fines tab</strong>.
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="dues-check-row dues-ok" style="margin-top:16px">Physical Inspection <strong>No damage found — All items OK ✓</strong></div>`;
+  }
+
+  // Final verdict
+  const icon  = r.fullyCleared ? '✅' : r.financiallyClear && !r.physicallyClear ? '⚠️' : '🚫';
+  const cls   = r.fullyCleared ? 'alert-success' : 'alert-warning';
+  html += `<div class="alert ${cls}" style="margin-top:12px">${icon} ${r.summary}</div>`;
+  if(r.fullyCleared) {
+    html += `<div class="admin-delegation-note" style="margin-top:8px">
+      📋 Pre-check complete. Inform the Warden that <strong>${r.studentName}</strong> (${r.rollFull}) is fully cleared for No Dues Certificate issuance.
+    </div>`;
+  }
+  finalDiv.innerHTML = html;
+}
+
+// ── RESUBMIT REJECTED PAYMENT ──────────────────────────────────────────────────
+let resubmitPaymentIndex = null;
+
+function openResubmitModal(paymentIndex) {
+  const payments = Array.isArray(csStudent?.payments) ? csStudent.payments : [];
+  const p = payments[paymentIndex];
+  if(!p) return;
+  resubmitPaymentIndex = paymentIndex;
+
+  // Show semester label
+  document.getElementById('resubmit-semester-label').innerHTML =
+    `✏ You are resubmitting the receipt for <strong>Semester ${p.semester}</strong>.
+     Please upload a corrected receipt number and image.`;
+
+  // Show original rejection reason if available
+  const reasonDiv = document.getElementById('resubmit-rejection-reason');
+  if(p.rejectionComment) {
+    reasonDiv.innerHTML = `<strong>Rejection Reason:</strong> ${p.rejectionComment}`;
+    reasonDiv.style.display = '';
+  } else {
+    reasonDiv.style.display = 'none';
+  }
+
+  // Pre-fill receipt number from previous submission; clear image
+  document.getElementById('resubmit-receipt').value = p.receipt || '';
+  document.getElementById('err-resubmit-receipt').classList.add('hidden');
+  document.getElementById('err-resubmit-img').classList.add('hidden');
+  delete uploadedB64['resubmit-img'];
+  delete uploadedFiles['resubmit-img'];
+  const z = document.getElementById('zone-resubmit-img');
+  if(z) {
+    z.classList.remove('has-file');
+    z.innerHTML = '<div class="file-icon" id="icon-resubmit-img">🧾</div><div class="file-info"><p id="fname-resubmit-img">Upload corrected receipt image</p><small>20–100 KB</small></div>';
+  }
+
+  // Show modal
+  const modal = document.getElementById('resubmit-modal');
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+}
+
+function closeResubmitModal() {
+  const modal = document.getElementById('resubmit-modal');
+  modal.classList.add('hidden');
+  modal.style.display = 'none';
+  resubmitPaymentIndex = null;
+}
+
+async function submitResubmit() {
+  const receipt = document.getElementById('resubmit-receipt')?.value.trim();
+  let ok = true;
+  if(!receipt) {
+    document.getElementById('err-resubmit-receipt').textContent = 'Receipt number is required.';
+    document.getElementById('err-resubmit-receipt').classList.remove('hidden');
+    ok = false;
+  } else {
+    document.getElementById('err-resubmit-receipt').classList.add('hidden');
+  }
+  if(!uploadedB64['resubmit-img']) {
+    document.getElementById('err-resubmit-img').textContent = 'Receipt image is required.';
+    document.getElementById('err-resubmit-img').classList.remove('hidden');
+    ok = false;
+  } else {
+    document.getElementById('err-resubmit-img').classList.add('hidden');
+  }
+  if(!ok) return;
+
+  const btn = document.getElementById('resubmit-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-dark"></span> Submitting…';
+
+  const r = await callBackend('resubmitPayment', {
+    rollFull:     csStudent.rollFull,
+    paymentIndex: resubmitPaymentIndex,
+    receipt:      receipt,
+    image:        uploadedB64['resubmit-img'],
+    paidAt:       new Date().toISOString()
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '📤 Resubmit for Verification';
+
+  if(r.success) {
+    csStudent = r.student;
+    closeResubmitModal();
+    renderPayments();
+    toast('Receipt resubmitted! Pending admin verification.', 'success');
+  } else {
+    toast('Resubmit failed: ' + (r.error || 'Unknown error'), 'error');
+  }
+}
+
+
+// ── SHARED REASON MODAL ────────────────────────────────────────────────────────
+// Replaces all browser prompt() calls. Options:
+//   title, label, placeholder, required (bool), confirmLabel, confirmClass, onConfirm(text)
+let _reasonModalCallback = null;
+
+function openReasonModal(opts) {
+  _reasonModalCallback = opts.onConfirm || null;
+  const modal = document.getElementById('reason-modal');
+  document.getElementById('reason-modal-title').textContent   = opts.title       || 'Enter Reason';
+  document.getElementById('reason-modal-label').textContent   = opts.label       || 'Reason';
+  document.getElementById('reason-modal-textarea').placeholder= opts.placeholder || '';
+  document.getElementById('reason-modal-textarea').value      = '';
+  document.getElementById('reason-modal-err').classList.add('hidden');
+  document.getElementById('reason-modal-required').style.display = opts.required ? '' : 'none';
+  const confirmBtn = document.getElementById('reason-modal-confirm');
+  confirmBtn.textContent = opts.confirmLabel || 'Confirm';
+  confirmBtn.className = 'btn ' + (opts.confirmClass || 'btn-primary');
+  document.getElementById('reason-modal-optional-hint').style.display = opts.required ? 'none' : '';
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('reason-modal-textarea').focus(), 80);
+}
+
+function closeReasonModal() {
+  const modal = document.getElementById('reason-modal');
+  modal.classList.add('hidden');
+  modal.style.display = 'none';
+  _reasonModalCallback = null;
+}
+
+async function submitReasonModal() {
+  const text = document.getElementById('reason-modal-textarea').value.trim();
+  const required = document.getElementById('reason-modal-required').style.display !== 'none';
+  if(required && !text) {
+    document.getElementById('reason-modal-err').textContent = 'This field is required.';
+    document.getElementById('reason-modal-err').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('reason-modal-err').classList.add('hidden');
+  const cb = _reasonModalCallback;
+  closeReasonModal();
+  if(cb) await cb(text);
+}
+
+// Close on Escape key
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') {
+    const rm = document.getElementById('reason-modal');
+    if(rm && !rm.classList.contains('hidden')) closeReasonModal();
+    const rsm = document.getElementById('resubmit-modal');
+    if(rsm && !rsm.classList.contains('hidden')) closeResubmitModal();
+  }
+});
+
+// ── RE-GENERATE LEAVE PDF (warden) ──────────────────────────────────────────────
+// Calls decideLeave with action='approved' again — GAS re-runs makeLeavePDF
+// and overwrites the old file in Drive, returning the fresh URL.
+async function regenLeavePDF(leaveId, btn) {
+  if(!confirm('Re-generate the approval letter PDF for leave ' + leaveId + '?\nThe Drive file will be overwritten with a fresh copy.')) return;
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-dark"></span> Generating...';
+  const r = await callBackend('decideLeave', {leaveId, decision:'approved', reason:'', regenOnly:true});
+  btn.disabled = false;
+  btn.textContent = origText;
+  if(r.success) {
+    toast('PDF re-generated successfully!', 'success');
+    await loadWardenLeaves();
+  } else {
+    toast('Re-generate failed: ' + (r.error || 'Unknown error'), 'error');
+  }
 }
 
 </script>
+<!-- ── RESUBMIT PAYMENT MODAL ── -->
+<div id="resubmit-modal" class="hidden" style="position:fixed;inset:0;background:rgba(15,39,68,.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:var(--radius-lg);padding:28px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);animation:slideUp .25s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <h3 style="font-family:'Playfair Display',serif;font-size:18px;color:var(--navy)">Resubmit Payment Receipt</h3>
+      <button onclick="closeResubmitModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400);line-height:1">✕</button>
+    </div>
+    <div id="resubmit-semester-label" class="alert alert-warning" style="margin-bottom:16px;font-size:13px"></div>
+    <div id="resubmit-rejection-reason" class="alert alert-danger" style="margin-bottom:16px;font-size:12px;display:none"></div>
+    <div class="field">
+      <label>New Receipt Number <span class="req">*</span></label>
+      <input type="text" id="resubmit-receipt" placeholder="Enter corrected receipt number"/>
+      <div class="err-msg hidden" id="err-resubmit-receipt"></div>
+    </div>
+    <div class="field">
+      <label>New Receipt Image <span class="req">*</span> <span style="font-weight:400;text-transform:none;font-size:11px">(20–100 KB)</span></label>
+      <div class="file-zone" id="zone-resubmit-img" onclick="document.getElementById('file-resubmit-img').click()">
+        <div class="file-icon" id="icon-resubmit-img">🧾</div>
+        <div class="file-info"><p id="fname-resubmit-img">Upload corrected receipt image</p><small>20–100 KB</small></div>
+      </div>
+      <input type="file" id="file-resubmit-img" accept="image/jpeg,image/png" class="hidden" onchange="handleFile('resubmit-img',20,100)"/>
+      <div class="err-msg hidden" id="err-resubmit-img"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeResubmitModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:2;background:var(--navy)" id="resubmit-submit-btn" onclick="submitResubmit()">📤 Resubmit for Verification</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── SHARED REASON MODAL ── -->
+<div id="reason-modal" class="hidden" style="position:fixed;inset:0;background:rgba(15,39,68,.55);z-index:9100;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeReasonModal()">
+  <div style="background:var(--white);border-radius:var(--radius-lg);padding:28px;max-width:440px;width:100%;box-shadow:var(--shadow-lg);animation:slideUp .25s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <h3 id="reason-modal-title" style="font-family:'Playfair Display',serif;font-size:18px;color:var(--navy)">Enter Reason</h3>
+      <button onclick="closeReasonModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400);line-height:1">✕</button>
+    </div>
+    <div class="field" style="margin-bottom:6px">
+      <label id="reason-modal-label" style="display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:5px;letter-spacing:.3px;text-transform:uppercase">
+        Reason <span id="reason-modal-required" class="req" style="color:#c0392b;margin-left:2px">*</span>
+      </label>
+      <span id="reason-modal-optional-hint" style="font-size:11px;color:var(--gray-400);display:none">(Optional — leave blank to use the default message)</span>
+      <textarea id="reason-modal-textarea" rows="3"
+        style="width:100%;padding:10px 13px;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--gray-800);background:var(--white);resize:vertical;outline:none;margin-top:6px"
+        placeholder="" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey))submitReasonModal()"></textarea>
+      <div style="font-size:10px;color:var(--gray-400);margin-top:3px">Ctrl+Enter to submit</div>
+      <div id="reason-modal-err" class="err-msg hidden" style="font-size:11px;color:var(--danger);margin-top:4px;font-weight:500"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeReasonModal()">Cancel</button>
+      <button id="reason-modal-confirm" class="btn btn-primary" style="flex:2" onclick="submitReasonModal()">Confirm</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
