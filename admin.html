@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Office Portal — GPM Hostel</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+
+  :root{
+    --navy:#0f2744;--navy-light:#1a3a5c;--navy-mid:#2a4d73;
+    --gold:#c8973a;--gold-light:#e8b86d;--gold-pale:#fdf4e3;
+    --cream:#fafaf7;--white:#ffffff;
+    --gray-50:#f8f8f6;--gray-100:#ededea;--gray-200:#d8d8d4;
+    --gray-400:#9d9d97;--gray-600:#6b6b65;--gray-800:#2c2c28;
+    --success:#1a6b3c;--success-bg:#eaf5ef;
+    --danger:#8b1a1a;--danger-bg:#fdf0f0;
+    --warning:#7a5c00;--warning-bg:#fffbeb;
+    --info:#1a3a7c;--info-bg:#eef3ff;
+    --radius-sm:6px;--radius-md:10px;--radius-lg:16px;--radius-xl:24px;
+    --shadow-sm:0 1px 3px rgba(15,39,68,.08);
+    --shadow-md:0 4px 16px rgba(15,39,68,.12);
+    --shadow-lg:0 12px 40px rgba(15,39,68,.18);
+    --transition:.2s cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--gray-800);min-height:100vh;font-size:15px;line-height:1.6}
+
+  /* ── INSTITUTE BANNER ── */
+  .institute-banner{background:linear-gradient(135deg,#0f2744 0%,#1a3a5c 100%);padding:14px 24px;display:flex;align-items:center;gap:18px;border-bottom:3px solid var(--gold)}
+  .inst-logo{width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex-shrink:0}
+  .inst-info{flex:1}
+  .inst-name{font-family:'Playfair Display',serif;font-size:20px;color:var(--gold);font-weight:700;letter-spacing:.3px}
+  .inst-addr{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
+  .inst-subtitle{font-size:13px;color:var(--gold-light);font-weight:600;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase}
+  @media(max-width:500px){.institute-banner{padding:12px 16px}.inst-name{font-size:16px}.inst-logo{width:48px;height:48px}}
+
+  /* ── HEADER ── */
+  .site-header{background:var(--navy);padding:0 24px;display:flex;align-items:center;justify-content:flex-end;height:44px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.25);border-bottom:1px solid rgba(200,151,58,.3)}
+  .site-logo{display:flex;align-items:center;gap:10px}
+  .site-logo-text h1{font-family:'Playfair Display',serif;font-size:14px;color:#fff;line-height:1.2}
+  .site-logo-text p{font-size:10px;color:rgba(255,255,255,.55);line-height:1}
+  .header-nav{display:flex;gap:4px}
+  .header-btn{background:transparent;border:none;color:rgba(255,255,255,.7);padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;transition:var(--transition);white-space:nowrap}
+  .header-btn:hover,.header-btn.active{background:rgba(255,255,255,.12);color:#fff}
+  .header-btn.active{font-weight:500}
+
+  /* ── LAYOUT ── */
+  .main{max-width:780px;margin:0 auto;padding:32px 20px 60px}
+
+  /* ── CARDS ── */
+  .card{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius-lg);padding:28px;box-shadow:var(--shadow-sm);animation:slideUp .3s ease}
+  .card + .card{margin-top:16px}
+  @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .card-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--navy);margin-bottom:6px}
+  .card-subtitle{font-size:13px;color:var(--gray-600);margin-bottom:24px}
+  .divider{border:none;border-top:1px solid var(--gray-100);margin:20px 0}
+
+  /* ── STEPS ── */
+  .steps{display:flex;align-items:flex-start;gap:0;margin-bottom:28px;overflow-x:auto;padding-bottom:4px}
+  .step-item{display:flex;align-items:center;flex:1;min-width:0}
+  .step-circle{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;transition:var(--transition)}
+  .step-circle.done{background:var(--success-bg);color:var(--success);border:1.5px solid var(--success)}
+  .step-circle.active{background:var(--navy);color:#fff;border:1.5px solid var(--navy)}
+  .step-circle.idle{background:var(--gray-50);color:var(--gray-400);border:1.5px solid var(--gray-200)}
+  .step-label{font-size:10px;color:var(--gray-600);margin-top:5px;text-align:center;white-space:nowrap;max-width:70px}
+  .step-col{display:flex;flex-direction:column;align-items:center}
+  .step-line{flex:1;height:1.5px;background:var(--gray-200);margin:0 6px;margin-bottom:18px}
+  .step-line.done-line{background:var(--success)}
+
+  /* ── FORM ── */
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .form-row-3{display:grid;grid-template-columns:70px 1fr 90px;gap:10px}
+  @media(max-width:500px){.form-row{grid-template-columns:1fr}.form-row-3{grid-template-columns:60px 1fr 80px}}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:5px;letter-spacing:.3px;text-transform:uppercase}
+  .field label span.req{color:#c0392b;margin-left:2px}
+  .field input,.field select,.field textarea{width:100%;padding:10px 13px;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--gray-800);background:var(--white);transition:var(--transition);outline:none;appearance:none}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(15,39,68,.08)}
+  .field input.error,.field select.error,.field textarea.error{border-color:var(--danger)}
+  .field .hint{font-size:11px;color:var(--gray-400);margin-top:4px}
+  .field .err-msg{font-size:11px;color:var(--danger);margin-top:4px;font-weight:500}
+  .roll-preview{font-size:12px;color:var(--navy-mid);margin-top:5px;font-weight:600}
+
+  /* ── FILE UPLOAD ── */
+  .file-zone{border:2px dashed var(--gray-200);border-radius:var(--radius-md);padding:14px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:var(--transition);background:var(--gray-50)}
+  .file-zone:hover{border-color:var(--navy-mid);background:var(--info-bg)}
+  .file-zone.has-file{border-color:var(--success);border-style:solid;background:var(--success-bg)}
+  .file-zone.error-zone{border-color:var(--danger)}
+  .file-preview{width:52px;height:52px;border-radius:var(--radius-sm);object-fit:cover;flex-shrink:0;border:1px solid var(--gray-200)}
+  .file-icon{width:52px;height:52px;border-radius:var(--radius-sm);background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .file-info p{font-size:13px;font-weight:500;color:var(--gray-800)}
+  .file-info small{font-size:11px;color:var(--gray-400)}
+
+  /* ── BUTTONS ── */
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:var(--transition);border:1.5px solid transparent;white-space:nowrap}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn-primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .btn-primary:hover:not(:disabled){background:var(--navy-light)}
+  .btn-secondary{background:transparent;color:var(--navy);border-color:var(--gray-200)}
+  .btn-secondary:hover:not(:disabled){background:var(--gray-50);border-color:var(--gray-400)}
+  .btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+  .btn-danger:hover:not(:disabled){background:#6b1010}
+  .btn-success{background:var(--success);color:#fff;border-color:var(--success)}
+  .btn-gold{background:var(--gold);color:#fff;border-color:var(--gold)}
+  .btn-gold:hover:not(:disabled){background:var(--gold-light)}
+  .btn-sm{padding:7px 14px;font-size:12px}
+  .btn-full{width:100%;justify-content:center}
+  .btn-row{display:flex;justify-content:space-between;gap:12px;margin-top:24px}
+
+  /* ── BADGE ── */
+  .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.2px}
+  .badge-pending{background:var(--warning-bg);color:var(--warning)}
+  .badge-approved{background:var(--success-bg);color:var(--success)}
+  .badge-rejected{background:var(--danger-bg);color:var(--danger)}
+
+  /* ── ALERT ── */
+  .alert{border-radius:var(--radius-md);padding:12px 16px;font-size:13px;margin-bottom:16px;border-left:3px solid}
+  .alert-info{background:var(--info-bg);color:var(--info);border-color:#4a6fcf}
+  .alert-success{background:var(--success-bg);color:var(--success);border-color:var(--success)}
+  .alert-danger{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
+  .alert-warning{background:var(--warning-bg);color:var(--warning);border-color:#c8973a}
+
+  /* ── FEE BOX ── */
+  .fee-box{background:var(--gold-pale);border:1px solid var(--gold-light);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:20px;display:flex;gap:20px;flex-wrap:wrap}
+  .fee-item{text-align:center}
+  .fee-item .amount{font-family:'Playfair Display',serif;font-size:18px;color:var(--navy);font-weight:700}
+  .fee-item .label{font-size:11px;color:var(--gray-600);margin-top:2px}
+
+  /* ── TABS ── */
+  .tabs{display:flex;border-bottom:2px solid var(--gray-100);margin-bottom:24px;gap:0;overflow-x:auto}
+  .tab-btn{background:none;border:none;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--gray-600);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:var(--transition)}
+  .tab-btn.active{color:var(--navy);border-bottom-color:var(--navy)}
+  .tab-btn:hover:not(.active){color:var(--navy-mid)}
+  .tab-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--danger);color:#fff;border-radius:10px;font-size:10px;padding:0 6px;min-width:18px;height:16px;margin-left:5px;font-weight:700}
+
+  /* ── TABLE ── */
+  .data-table{width:100%;border-collapse:collapse;font-size:13px}
+  .data-table th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--gray-600);background:var(--gray-50);border-bottom:1px solid var(--gray-100)}
+  .data-table td{padding:11px 12px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+  .data-table tr:last-child td{border-bottom:none}
+  .data-table tr:hover td{background:var(--gray-50)}
+
+  /* ── STAT CARDS ── */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:24px}
+  .stat-card{background:var(--gray-50);border-radius:var(--radius-md);padding:14px 16px;border:1px solid var(--gray-100)}
+  .stat-card .val{font-family:'Playfair Display',serif;font-size:24px;color:var(--navy);line-height:1}
+  .stat-card .lbl{font-size:11px;color:var(--gray-600);margin-top:4px}
+
+  /* ── STUDENT ROW ── */
+  .student-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--gray-100)}
+  .student-row:last-child{border-bottom:none}
+  .student-avatar{width:40px;height:40px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
+  .student-name{font-weight:600;font-size:14px;color:var(--gray-800)}
+  .student-meta{font-size:12px;color:var(--gray-600);margin-top:2px}
+
+  /* ── HOME CARDS ── */
+  .home-grid{display:flex;flex-direction:column;gap:14px;max-width:480px;margin:0 auto}
+  .home-card{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius-lg);padding:22px 24px;cursor:pointer;transition:var(--transition);display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-sm)}
+  .home-card:hover{box-shadow:var(--shadow-md);border-color:var(--navy-mid);transform:translateY(-2px)}
+  .home-card-left{display:flex;align-items:center;gap:16px}
+  .home-card-icon{width:48px;height:48px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:22px}
+  .home-card-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--navy)}
+  .home-card-desc{font-size:12px;color:var(--gray-600);margin-top:3px}
+  .home-card-arrow{color:var(--gray-400);font-size:20px;flex-shrink:0}
+  .home-header{text-align:center;margin-bottom:36px}
+  .home-header h1{font-family:'Playfair Display',serif;font-size:28px;color:var(--navy);margin-bottom:6px}
+  .home-header p{color:var(--gray-600);font-size:14px}
+  .home-emblem{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:var(--shadow-md);overflow:hidden;border:3px solid var(--gold)}
+
+  /* ── SUCCESS ── */
+  .success-screen{text-align:center;padding:32px 0}
+  .success-icon{font-size:56px;margin-bottom:16px}
+  .success-screen h2{font-family:'Playfair Display',serif;font-size:24px;color:var(--navy);margin-bottom:8px}
+  .success-screen p{color:var(--gray-600);font-size:14px;margin-bottom:20px}
+  .ref-box{display:inline-block;background:var(--navy);color:#fff;padding:10px 20px;border-radius:var(--radius-md);font-size:13px;font-weight:600;letter-radius:.3px;margin-bottom:20px}
+
+  /* ── PROFILE GRID ── */
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .info-item .key{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;color:var(--gray-400)}
+  .info-item .val{font-size:14px;color:var(--gray-800);margin-top:2px}
+
+  /* ── HOSTEL ALLOTMENT CHIPS ── */
+  .allot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+  .allot-chip{background:var(--navy);border-radius:var(--radius-sm);padding:8px 10px;text-align:center}
+  .allot-chip .key{font-size:9px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px}
+  .allot-chip .val{font-size:14px;color:#fff;font-weight:600;margin-top:2px}
+
+  /* ── FINE ROW ── */
+  .fine-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--gray-100)}
+  .fine-row:last-child{border-bottom:none}
+  .fine-row.revoked{opacity:.45}
+  .revoked-tag{font-size:11px;font-weight:600;color:var(--success);background:var(--success-bg);padding:2px 8px;border-radius:10px}
+
+  /* ── WARDEN LOGIN ── */
+  .login-wrap{max-width:380px;margin:0 auto}
+  .login-header{text-align:center;padding:20px 0 28px}
+
+  /* ── SPINNER ── */
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spinner-dark{border-color:rgba(15,39,68,.2);border-top-color:var(--navy)}
+
+  /* ── SECTION HEADING ── */
+  .section-heading{font-family:'Playfair Display',serif;font-size:15px;color:var(--navy);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--gray-100)}
+
+  /* ── HIDDEN ── */
+  .hidden{display:none!important}
+
+  /* ── BACK LINK ── */
+  .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--gray-600);font-size:13px;cursor:pointer;margin-bottom:20px;background:none;border:none;padding:0;font-family:'DM Sans',sans-serif;transition:var(--transition)}
+  .back-link:hover{color:var(--navy)}
+
+  /* ── TOAST ── */
+  #toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:13px 20px;border-radius:var(--radius-md);font-size:13px;box-shadow:var(--shadow-lg);z-index:9999;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);max-width:320px}
+  #toast.show{transform:translateY(0);opacity:1}
+  #toast.toast-success{background:var(--success)}
+  #toast.toast-error{background:var(--danger)}
+
+  /* ── NO DUES SUMMARY ── */
+  .dues-check-row{display:flex;justify-content:space-between;padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:8px;font-size:13px;font-weight:500}
+  .dues-ok{background:var(--success-bg);color:var(--success)}
+  .dues-bad{background:var(--danger-bg);color:var(--danger)}
+  @media(max-width:600px){.allot-grid{grid-template-columns:repeat(2,1fr)}.info-grid{grid-template-columns:1fr}}
+
+  /* ── ADMIN OFFICE ROLE BADGE ── */
+  .role-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+  .role-admin{background:#e8f3ff;color:#1a3a7c;border:1px solid #b5d4f4}
+  .role-warden{background:var(--gold-pale);color:#7a5c00;border:1px solid var(--gold-light)}
+  .admin-task-card{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:16px;margin-bottom:10px}
+  .admin-task-card .task-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+  .admin-task-card .task-meta{font-size:12px;color:var(--gray-600);margin-top:3px}
+  .admin-delegation-note{background:#e8f3ff;border:1px solid #b5d4f4;border-left:3px solid #185fa5;border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:#1a3a7c;margin-bottom:16px}
+
+</style>
+</head>
+<body>
+<!-- ═══════════════ INSTITUTE BANNER ═══════════════ -->
+<div class="institute-banner">
+  <img id="inst-logo" alt="GPM Logo" class="inst-logo"/>
+  <div class="inst-info">
+    <div class="inst-name">Government Polytechnic, Munger</div>
+    <div class="inst-addr">Ramankabad, Haveli Kharagpur, Munger-811213, Bihar</div>
+    <div class="inst-subtitle">🏠 HOSTEL MANAGEMENT SYSTEM</div>
+  </div>
+</div>
+<header class="site-header">
+  <nav class="header-nav" style="margin-left:0">
+    <button class="header-btn" onclick="window.location.href='student.html'">Home</button>
+    <button class="header-btn" onclick="window.location.href='student.html'">New Student</button>
+    <button class="header-btn" onclick="window.location.href='student.html'">Student Login</button>
+    <button class="header-btn" onclick="window.location.href='warden.html'">Warden</button>
+    <button class="header-btn active">Admin Office</button>
+  </nav>
+</header>
+<main class="main">
+<section id="sec-admin">
+
+  <!-- Login -->
+  <div id="adm-login">
+    <div class="card login-wrap">
+      <div class="login-header">
+        <div style="font-size:40px;margin-bottom:10px">🏢</div>
+        <div class="card-title">Admin Office Login</div>
+        <div class="card-subtitle" style="margin-bottom:0">GPM Hostel — Administrative Staff Portal</div>
+      </div>
+      <div class="admin-delegation-note">
+        The Admin Office handles <strong>operational tasks</strong>: payment verification, account unlocks, grievance intake, leave review, and no-dues pre-checks.
+        Disciplinary decisions remain with the Warden.
+      </div>
+      <div class="field">
+        <label>Admin ID <span class="req">*</span></label>
+        <input type="text" id="adm-id" placeholder="Enter admin ID" autocomplete="username"/>
+      </div>
+      <div class="field">
+        <label>Password <span class="req">*</span></label>
+        <div style="position:relative">
+          <input type="password" id="adm-pass" placeholder="Enter password" autocomplete="current-password"
+            onkeydown="if(event.key==='Enter') adminLogin()" style="padding-right:40px"/>
+          <button type="button" onclick="togglePwd('adm-pass','adm-pass-eye')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--gray-600);padding:0" id="adm-pass-eye">👁</button>
+        </div>
+        <div class="err-msg hidden" id="err-adm-login"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="adminLogin()">Login to Admin Portal</button>
+      <div style="text-align:center;margin-top:14px">
+        <button class="back-link" onclick="showSection('home')" style="font-size:12px;color:var(--gray-400)">← Return to Home</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="adm-dashboard" class="hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--navy)">Admin Office Dashboard</div>
+        <div style="font-size:13px;color:var(--gray-600)">GPM Hostel — Operational Tasks <span class="role-badge role-admin" style="margin-left:8px">Admin Office</span></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="adminLogout()">Logout</button>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stat-grid" id="adm-stats"></div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="admTab('payments')" id="adm-tab-btn-payments">
+          Payment Verification <span class="tab-badge" id="adm-pay-badge" style="display:none">0</span>
+        </button>
+        <button class="tab-btn" onclick="admTab('allotment')">🏠 Allotment</button>
+        <button class="tab-btn" onclick="admTab('unlock')">🔓 Account Unlock</button>
+        <button class="tab-btn" onclick="admTab('leaves')">
+          Leave Review <span class="tab-badge" id="adm-leave-badge" style="display:none">0</span>
+        </button>
+        <button class="tab-btn" onclick="admTab('grievances')">
+          Grievance Intake <span class="tab-badge" id="adm-grv-badge" style="display:none">0</span>
+        </button>
+        <button class="tab-btn" onclick="admTab('nodues')">No Dues Pre-Check</button>
+      </div>
+
+      <!-- ── PAYMENT VERIFICATION TAB ── -->
+      <div id="adm-tab-payments">
+        <div class="admin-delegation-note">
+          ✅ <strong>Admin task:</strong> Verify student payment receipts (Registration Fee, Caution Money, Allotment Fee).
+          Approved payments allow the Warden to proceed with room allotment.
+        </div>
+        <div id="adm-pay-list"><p style="color:var(--gray-400);font-size:13px"><span class="spinner spinner-dark"></span> Loading…</p></div>
+      </div>
+
+      <!-- ── ALLOTMENT TAB ── -->
+      <div id="adm-tab-allotment" class="hidden">
+        <div class="admin-delegation-note">
+          🏠 <strong>Admin task:</strong> Pre-fill room, bed, chair, and table numbers for pending students after physical inspection.
+          The Warden reviews this and clicks <em>Approve &amp; Send Allotment Letter</em> — only the Warden can finalise.
+        </div>
+        <div class="field">
+          <label>Search Pending Student by Roll Number</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px;flex:1">
+              <input type="text" id="adm-allot-roll-no" maxlength="2" placeholder="25" style="text-align:center;font-weight:600"/>
+              <select id="adm-allot-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
+                <option>CE</option><option selected>CSE</option><option>EE</option>
+                <option>EC</option><option>FTS</option><option>ME</option>
+              </select>
+              <input type="text" id="adm-allot-roll-year" maxlength="4" placeholder="2026" style="text-align:center;font-weight:600"/>
+            </div>
+            <button class="btn btn-secondary" onclick="admAllotSearch()">Search</button>
+          </div>
+        </div>
+        <div id="adm-allot-result" class="hidden">
+          <hr class="divider"/>
+          <div id="adm-allot-student-info" style="margin-bottom:16px"></div>
+          <div class="section-heading">Pre-fill Accommodation Details</div>
+          <div class="form-row">
+            <div class="field">
+              <label>Hostel Block <span class="req">*</span></label>
+              <select id="adm-allot-hostel">
+                <option>BH-01</option><option>BH-02</option><option>GH-01</option><option>GH-02</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Room Number <span class="req">*</span></label>
+              <input type="text" id="adm-allot-room" placeholder="e.g. T-20"/>
+              <div class="err-msg hidden" id="err-adm-allot-room"></div>
+            </div>
+            <div class="field">
+              <label>Bed Number <span class="req">*</span></label>
+              <input type="text" id="adm-allot-bed" placeholder="e.g. B-01"/>
+              <div class="err-msg hidden" id="err-adm-allot-bed"></div>
+            </div>
+            <div class="field">
+              <label>Chair Number <span class="req">*</span></label>
+              <input type="text" id="adm-allot-chair" placeholder="e.g. C-01"/>
+              <div class="err-msg hidden" id="err-adm-allot-chair"></div>
+            </div>
+            <div class="field" style="grid-column:1/-1">
+              <label>Table Number <span class="req">*</span></label>
+              <input type="text" id="adm-allot-table" placeholder="e.g. D-01"/>
+              <div class="err-msg hidden" id="err-adm-allot-table"></div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="admSaveAllotment()" id="btn-adm-allot">💾 Save Accommodation — Forward to Warden</button>
+          <div id="adm-allot-msg" style="margin-top:12px"></div>
+        </div>
+
+        <hr class="divider"/>
+        <div class="section-heading">Pending Applications — Allotment Status</div>
+        <div id="adm-allot-list"><p style="color:var(--gray-400);font-size:13px">Loading…</p></div>
+      </div>
+
+      <!-- ── ACCOUNT UNLOCK TAB ── -->
+      <div id="adm-tab-unlock" class="hidden">
+        <div class="admin-delegation-note">
+          🔓 <strong>Admin task:</strong> Unlock student accounts locked after repeated failed login attempts.
+          Verify the student's identity in person before unlocking.
+        </div>
+        <div class="alert alert-warning" style="margin-bottom:16px;font-size:13px">
+          A student account is locked after <strong>5 wrong passwords</strong> and <strong>2 failed password resets</strong>.
+          Verify student identity in person, then use the master key to unlock.
+        </div>
+        <div class="field">
+          <label>Student Email <span class="req">*</span></label>
+          <input type="email" id="adm-unlock-email" placeholder="student@email.com"/>
+          <div class="err-msg hidden" id="err-adm-unlock-email"></div>
+        </div>
+        <div class="field">
+          <label>Master Key <span class="req">*</span></label>
+          <div style="position:relative">
+            <input type="password" id="adm-unlock-masterkey" placeholder="Enter master key" style="padding-right:40px"/>
+            <button type="button" onclick="togglePwd('adm-unlock-masterkey','eye-adm-unlock')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px" id="eye-adm-unlock">👁</button>
+          </div>
+          <div class="err-msg hidden" id="err-adm-unlock-key"></div>
+        </div>
+        <button class="btn btn-primary" onclick="adminUnlockAccount()" id="btn-adm-unlock">🔓 Unlock Account</button>
+        <div id="adm-unlock-result" style="margin-top:14px"></div>
+      </div>
+
+      <!-- ── LEAVE REVIEW TAB ── -->
+      <div id="adm-tab-leaves" class="hidden">
+        <div class="admin-delegation-note">
+          📋 <strong>Admin task:</strong> Review leave applications for eligibility (approved student, valid dates, within 10-day limit).
+          Log a forwarding note and escalate to Warden. The Warden makes the final approve/reject decision.
+        </div>
+        <div class="section-heading">Pending Leave Applications</div>
+        <div id="adm-leave-pending"><p style="color:var(--gray-400);font-size:13px"><span class="spinner spinner-dark"></span> Loading…</p></div>
+        <hr class="divider"/>
+        <div class="section-heading" style="margin-top:4px">All Leave Applications</div>
+        <div id="adm-leave-all"></div>
+      </div>
+
+      <!-- ── GRIEVANCE INTAKE TAB ── -->
+      <div id="adm-tab-grievances" class="hidden">
+        <div class="admin-delegation-note">
+          📣 <strong>Admin task:</strong> Log intake notes on new grievances and mark them as "in-review" so the Warden sees prioritised cases.
+          Only the Warden can reply to students or resolve grievances.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn btn-secondary btn-sm" onclick="admFilterGrievances('all')"       id="adm-grv-f-all"       style="font-size:11px">All</button>
+          <button class="btn btn-secondary btn-sm" onclick="admFilterGrievances('pending')"    id="adm-grv-f-pending"    style="font-size:11px">🕐 Pending</button>
+          <button class="btn btn-secondary btn-sm" onclick="admFilterGrievances('in-review')" id="adm-grv-f-in-review" style="font-size:11px">🔍 In Review</button>
+          <button class="btn btn-secondary btn-sm" onclick="admFilterGrievances('resolved')"  id="adm-grv-f-resolved"  style="font-size:11px">✅ Resolved</button>
+        </div>
+        <div id="adm-grievance-list"><p style="color:var(--gray-400);font-size:13px"><span class="spinner spinner-dark"></span> Loading…</p></div>
+      </div>
+
+      <!-- ── NO DUES PRE-CHECK TAB ── -->
+      <div id="adm-tab-nodues" class="hidden">
+        <div class="admin-delegation-note">
+          📄 <strong>Admin task:</strong> Run a full pre-check — verify financial clearance <em>and</em> physically inspect the room, bed, chair, and table.
+          If damage is found, the system suggests a fine structure for the Warden to impose. The Warden still issues the final certificate.
+        </div>
+        <div class="field">
+          <label>Search Student by Roll Number</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px;flex:1">
+              <input type="text" id="adm-nd-roll-no" maxlength="2" placeholder="25" style="text-align:center;font-weight:600"/>
+              <select id="adm-nd-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
+                <option>CE</option><option selected>CSE</option><option>EE</option>
+                <option>EC</option><option>FTS</option><option>ME</option>
+              </select>
+              <input type="text" id="adm-nd-roll-year" maxlength="4" placeholder="2026" style="text-align:center;font-weight:600"/>
+            </div>
+            <button class="btn btn-secondary" onclick="admNdFetchStudent()">Fetch Student</button>
+          </div>
+        </div>
+
+        <div id="adm-nd-result" class="hidden">
+          <hr class="divider"/>
+          <div id="adm-nd-student-info" style="margin-bottom:16px"></div>
+
+          <!-- Financial check summary (auto) -->
+          <div id="adm-nd-financial" style="margin-bottom:20px"></div>
+
+          <!-- Physical inspection form -->
+          <div class="section-heading">Physical Inspection — Room & Furniture</div>
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px">
+            Check each item physically and mark if any damage is found. Damaged items will generate a fine suggestion for the Warden.
+          </p>
+
+          <!-- Inspection items — static HTML, toggled by JS -->
+          <div id="adm-nd-inspection-items">
+
+            <!-- Room -->
+            <div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:14px;margin-bottom:10px" id="adm-insp-card-room">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div style="font-weight:600;font-size:14px">🏠 Room</div>
+                <div style="display:flex;gap:14px;align-items:center">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--success)">
+                    <input type="radio" name="adm-insp-room" value="ok" checked onchange="admInspToggle('room',false)"/> ✓ OK
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--danger)">
+                    <input type="radio" name="adm-insp-room" value="damaged" onchange="admInspToggle('room',true)"/> ✗ Damaged
+                  </label>
+                </div>
+              </div>
+              <div id="adm-insp-note-wrap-room" class="hidden" style="margin-top:10px">
+                <div class="field" style="margin-bottom:0">
+                  <label style="font-size:11px">Damage Description <span class="req">*</span></label>
+                  <input type="text" id="adm-insp-note-room" placeholder="Describe the room damage observed…" style="font-size:13px"/>
+                </div>
+                <div style="margin-top:8px;background:var(--warning-bg);border:1px solid var(--gold-light);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--warning)">
+                  💡 Suggested fine: <strong>₹2000</strong> — will be recommended to Warden
+                </div>
+              </div>
+            </div>
+
+            <!-- Bed -->
+            <div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:14px;margin-bottom:10px" id="adm-insp-card-bed">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div style="font-weight:600;font-size:14px">🛏 Bed</div>
+                <div style="display:flex;gap:14px;align-items:center">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--success)">
+                    <input type="radio" name="adm-insp-bed" value="ok" checked onchange="admInspToggle('bed',false)"/> ✓ OK
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--danger)">
+                    <input type="radio" name="adm-insp-bed" value="damaged" onchange="admInspToggle('bed',true)"/> ✗ Damaged
+                  </label>
+                </div>
+              </div>
+              <div id="adm-insp-note-wrap-bed" class="hidden" style="margin-top:10px">
+                <div class="field" style="margin-bottom:0">
+                  <label style="font-size:11px">Damage Description <span class="req">*</span></label>
+                  <input type="text" id="adm-insp-note-bed" placeholder="Describe the bed damage observed…" style="font-size:13px"/>
+                </div>
+                <div style="margin-top:8px;background:var(--warning-bg);border:1px solid var(--gold-light);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--warning)">
+                  💡 Suggested fine: <strong>₹800</strong> — will be recommended to Warden
+                </div>
+              </div>
+            </div>
+
+            <!-- Chair -->
+            <div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:14px;margin-bottom:10px" id="adm-insp-card-chair">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div style="font-weight:600;font-size:14px">🪑 Chair</div>
+                <div style="display:flex;gap:14px;align-items:center">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--success)">
+                    <input type="radio" name="adm-insp-chair" value="ok" checked onchange="admInspToggle('chair',false)"/> ✓ OK
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--danger)">
+                    <input type="radio" name="adm-insp-chair" value="damaged" onchange="admInspToggle('chair',true)"/> ✗ Damaged
+                  </label>
+                </div>
+              </div>
+              <div id="adm-insp-note-wrap-chair" class="hidden" style="margin-top:10px">
+                <div class="field" style="margin-bottom:0">
+                  <label style="font-size:11px">Damage Description <span class="req">*</span></label>
+                  <input type="text" id="adm-insp-note-chair" placeholder="Describe the chair damage observed…" style="font-size:13px"/>
+                </div>
+                <div style="margin-top:8px;background:var(--warning-bg);border:1px solid var(--gold-light);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--warning)">
+                  💡 Suggested fine: <strong>₹500</strong> — will be recommended to Warden
+                </div>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:14px;margin-bottom:10px" id="adm-insp-card-table">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <div style="font-weight:600;font-size:14px">🪞 Table</div>
+                <div style="display:flex;gap:14px;align-items:center">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--success)">
+                    <input type="radio" name="adm-insp-table" value="ok" checked onchange="admInspToggle('table',false)"/> ✓ OK
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;color:var(--danger)">
+                    <input type="radio" name="adm-insp-table" value="damaged" onchange="admInspToggle('table',true)"/> ✗ Damaged
+                  </label>
+                </div>
+              </div>
+              <div id="adm-insp-note-wrap-table" class="hidden" style="margin-top:10px">
+                <div class="field" style="margin-bottom:0">
+                  <label style="font-size:11px">Damage Description <span class="req">*</span></label>
+                  <input type="text" id="adm-insp-note-table" placeholder="Describe the table damage observed…" style="font-size:13px"/>
+                </div>
+                <div style="margin-top:8px;background:var(--warning-bg);border:1px solid var(--gold-light);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--warning)">
+                  💡 Suggested fine: <strong>₹600</strong> — will be recommended to Warden
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <button class="btn btn-primary" onclick="admRunNoDuesCheck()" id="btn-adm-nd-check" style="margin-top:8px">🔍 Run Full Pre-Check</button>
+          <div id="adm-nd-final-result" style="margin-top:16px"></div>
+        </div>
+      </div>
+
+    </div><!-- .card -->
+  </div><!-- adm-dashboard -->
+</section>
+</main>
+<div id="toast"></div>
+<div id="resubmit-modal" class="hidden" style="position:fixed;inset:0;background:rgba(15,39,68,.55);z-index:9000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--white);border-radius:var(--radius-lg);padding:28px;max-width:420px;width:100%;box-shadow:var(--shadow-lg);animation:slideUp .25s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <h3 style="font-family:'Playfair Display',serif;font-size:18px;color:var(--navy)">Resubmit Payment Receipt</h3>
+      <button onclick="closeResubmitModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400);line-height:1">✕</button>
+    </div>
+    <div id="resubmit-semester-label" class="alert alert-warning" style="margin-bottom:16px;font-size:13px"></div>
+    <div id="resubmit-rejection-reason" class="alert alert-danger" style="margin-bottom:16px;font-size:12px;display:none"></div>
+    <div class="field">
+      <label>New Receipt Number <span class="req">*</span></label>
+      <input type="text" id="resubmit-receipt" placeholder="Enter corrected receipt number"/>
+      <div class="err-msg hidden" id="err-resubmit-receipt"></div>
+    </div>
+    <div class="field">
+      <label>New Receipt Image <span class="req">*</span> <span style="font-weight:400;text-transform:none;font-size:11px">(20–100 KB)</span></label>
+      <div class="file-zone" id="zone-resubmit-img" onclick="document.getElementById('file-resubmit-img').click()">
+        <div class="file-icon" id="icon-resubmit-img">🧾</div>
+        <div class="file-info"><p id="fname-resubmit-img">Upload corrected receipt image</p><small>20–100 KB</small></div>
+      </div>
+      <input type="file" id="file-resubmit-img" accept="image/jpeg,image/png" class="hidden" onchange="handleFile('resubmit-img',20,100)"/>
+      <div class="err-msg hidden" id="err-resubmit-img"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeResubmitModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:2;background:var(--navy)" id="resubmit-submit-btn" onclick="submitResubmit()">📤 Resubmit for Verification</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── SHARED REASON MODAL ── -->
+<div id="reason-modal" class="hidden" style="position:fixed;inset:0;background:rgba(15,39,68,.55);z-index:9100;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeReasonModal()">
+  <div style="background:var(--white);border-radius:var(--radius-lg);padding:28px;max-width:440px;width:100%;box-shadow:var(--shadow-lg);animation:slideUp .25s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <h3 id="reason-modal-title" style="font-family:'Playfair Display',serif;font-size:18px;color:var(--navy)">Enter Reason</h3>
+      <button onclick="closeReasonModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-400);line-height:1">✕</button>
+    </div>
+    <div class="field" style="margin-bottom:6px">
+      <label id="reason-modal-label" style="display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:5px;letter-spacing:.3px;text-transform:uppercase">
+        Reason <span id="reason-modal-required" class="req" style="color:#c0392b;margin-left:2px">*</span>
+      </label>
+      <span id="reason-modal-optional-hint" style="font-size:11px;color:var(--gray-400);display:none">(Optional — leave blank to use the default message)</span>
+      <textarea id="reason-modal-textarea" rows="3"
+        style="width:100%;padding:10px 13px;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--gray-800);background:var(--white);resize:vertical;outline:none;margin-top:6px"
+        placeholder="" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey))submitReasonModal()"></textarea>
+      <div style="font-size:10px;color:var(--gray-400);margin-top:3px">Ctrl+Enter to submit</div>
+      <div id="reason-modal-err" class="err-msg hidden" style="font-size:11px;color:var(--danger);margin-top:4px;font-weight:500"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeReasonModal()">Cancel</button>
+      <button id="reason-modal-confirm" class="btn btn-primary" style="flex:2" onclick="submitReasonModal()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+<script>
+// ── LOGO ──
+const LOGO_SRC = "data:image/jpeg;base64,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";
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.inst-logo, #inst-logo, .inst-logo-home').forEach(function(img) {
+    img.src = LOGO_SRC;
+  });
+});
+
+// ══════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_clvNR36kCW7cCspGRzekHe-fZhFI_nG3h7w4DbUdhrDt7ng/exec";
+// Warden credentials are stored securely in the Google Sheet "Config" tab.
+// Do NOT put warden ID/password in this file — it is public on GitHub.
+
+const BIHAR_DISTRICTS = [
+  "Araria","Arwal","Aurangabad","Banka","Begusarai","Bhagalpur","Bhojpur","Buxar",
+  "Darbhanga","East Champaran","Gaya","Gopalganj","Jamui","Jehanabad","Kaimur",
+  "Katihar","Khagaria","Kishanganj","Lakhisarai","Madhepura","Madhubani","Munger",
+  "Muzaffarpur","Nalanda","Nawada","Patna","Purnia","Rohtas","Saharsa","Samastipur",
+  "Saran","Sheikhpura","Sheohar","Sitamarhi","Siwan","Supaul","Vaishali","West Champaran"
+];
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let currentSection = 'home';
+let nsStep = 0;
+let csStudent = null;
+let wrStudents = [];
+let wrCurrentApproveRoll = null;
+let wrDataLoaded = false;           // cache flag — prevent redundant full reload
+const uploadedFiles = {};   // key → File object
+const uploadedB64   = {};   // key → base64 string
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => { /* admin init */ });
+
+// ══════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════
+function showSection(name) { /* single-section portal */ }
+
+// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// DATE HELPER — safely formats any date/timestamp to DD-MM-YYYY
+// Never passes DD-MM-YYYY strings through new Date() to avoid MM-DD swap
+// ══════════════════════════════════════════════════════════
+function fmtDMY(raw) {
+  if(!raw) return '—';
+  const s = String(raw).trim();
+  // Already DD-MM-YYYY — return as-is
+  if(/^\d{2}-\d{2}-\d{4}$/.test(s)) return s;
+  // ISO YYYY-MM-DD or timestamp — split safely, never via new Date()
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const parts = s.split('T')[0].split('-');
+    return parts[2]+'-'+parts[1]+'-'+parts[0];
+  }
+  // Fallback
+  return s.split('T')[0] || s;
+}
+
+// TOAST
+// ══════════════════════════════════════════════════════════
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (type ? ' toast-'+type : '');
+  setTimeout(() => { t.className = ''; }, 3500);
+}
+
+// ══════════════════════════════════════════════════════════
+// BACKEND CALL
+// ══════════════════════════════════════════════════════════
+async function callBackend(action, data={}) {
+  if(GAS_URL.includes("YOUR_SCRIPT_ID")) {
+    toast("⚙️ Backend not configured — please set your Apps Script URL in GAS_URL","error");
+    return {success:false, error:"GAS_URL not configured. Open the HTML file and replace YOUR_SCRIPT_ID with your deployed Apps Script Web App URL."};
+  }
+  try {
+    const res = await fetch(GAS_URL, {
+      method:"POST",
+      mode:"cors",
+      headers:{"Content-Type":"text/plain"},  // text/plain avoids CORS preflight for GAS
+      body: JSON.stringify({action, ...data})
+    });
+    if(!res.ok) return {success:false, error:"Server error: HTTP "+res.status};
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch { return {success:false, error:"Invalid response from server: "+text.slice(0,100)}; }
+  } catch(e) {
+    console.error("callBackend error:", e);
+    const msg = e.message.toLowerCase().includes("fetch")
+      ? "Network error — check your internet connection and Apps Script URL."
+      : e.message;
+    return {success:false, error: msg};
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// FILE HANDLING
+// ══════════════════════════════════════════════════════════
+function handleFile(key, minKB, maxKB) {
+  const input = document.getElementById('file-'+key);
+  const zone  = document.getElementById('zone-'+key);
+  const icon  = document.getElementById('icon-'+key);
+  const fname = document.getElementById('fname-'+key);
+  const fsize = document.getElementById('fsize-'+key);
+  const errEl = document.getElementById('err-'+key);
+
+  const file = input.files[0];
+  if(!file) return;
+  const kb = file.size / 1024;
+
+  let err = null;
+  if(!['image/jpeg','image/png'].includes(file.type)) err = 'Only JPEG or PNG allowed';
+  else if(kb < minKB) err = `File too small (min ${minKB} KB)`;
+  else if(kb > maxKB) err = `File too large (max ${maxKB} KB)`;
+
+  if(err) {
+    showErr(key, err);
+    zone.classList.add('error-zone');
+    return;
+  }
+  if(errEl) { errEl.textContent=''; errEl.classList.add('hidden'); }
+  zone.classList.remove('error-zone');
+  zone.classList.add('has-file');
+
+  uploadedFiles[key] = file;
+
+  // Preview — always replace previous preview image
+  const reader = new FileReader();
+  reader.onload = ev => {
+    uploadedB64[key] = ev.target.result.split(',')[1];
+    // Find existing preview img or original icon element and replace/update it
+    const existingImg = zone.querySelector('img.file-preview');
+    if(existingImg) {
+      existingImg.src = ev.target.result; // update in place
+    } else {
+      const currentIcon = document.getElementById('icon-'+key);
+      if(currentIcon) { const img = document.createElement('img'); img.src=ev.target.result; img.className='file-preview'; img.id='icon-'+key; currentIcon.replaceWith(img); }
+    }
+  };
+  reader.readAsDataURL(file);
+
+  if(fname) fname.textContent = file.name;
+  if(fsize) fsize.textContent = kb.toFixed(1)+' KB';
+}
+
+// ══════════════════════════════════════════════════════════
+// VALIDATION HELPERS
+// ══════════════════════════════════════════════════════════
+function showErr(fieldId, msg) {
+  const el = document.getElementById('err-'+fieldId);
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  const input = document.querySelector('#err-'+fieldId)?.previousElementSibling;
+  // try to mark input red
+}
+function clearErr(fieldId) {
+  const el = document.getElementById('err-'+fieldId);
+  if(el) { el.textContent=''; el.classList.add('hidden'); }
+}
+function getVal(id) { const el=document.getElementById(id); return el ? el.value.trim() : ''; }
+function setVal(id,v) { const el=document.getElementById(id); if(el) el.value=v; }
+
+// ══════════════════════════════════════════════════════════
+// ROLL NUMBER PREVIEW
+// ══════════════════════════════════════════════════════════
+function updateRollPreview() {
+  const no  = document.getElementById('ns-roll-no')?.value.trim() || '__';
+  const br  = document.getElementById('ns-roll-branch')?.value || 'CSE';
+  const yr  = document.getElementById('ns-roll-year')?.value.trim() || 'YYYY';
+  const prev = document.getElementById('roll-preview');
+  if(prev) prev.textContent = `Preview: ${no}/${br}/${yr}`;
+}
+
+function getRollFull(noId, brId, yrId) {
+  const no = document.getElementById(noId)?.value.trim();
+  const br = document.getElementById(brId)?.value;
+  const yr = document.getElementById(yrId)?.value.trim();
+  return `${no}/${br}/${yr}`;
+}
+
+// ══════════════════════════════════════════════════════════
+
+// ADMIN OFFICE PORTAL
+// ══════════════════════════════════════════════════════════
+
+let admStudents = [];
+let admStudentsLoaded = false;
+let admAllGrievances = [];
+let admAllLeaves = [];
+
+async function adminLogin() {
+  const id   = document.getElementById('adm-id')?.value.trim();
+  const pass = document.getElementById('adm-pass')?.value;
+  const errEl = document.getElementById('err-adm-login');
+  errEl.classList.add('hidden');
+  if(!id || !pass) {
+    errEl.textContent = 'Admin ID and password are required.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  const btn = document.querySelector('#adm-login .btn-primary');
+  if(btn) { btn.disabled=true; btn.innerHTML='<span class="spinner spinner-dark"></span> Verifying…'; }
+  const r = await callBackend('adminLogin', {adminId:id, adminPass:pass});
+  if(btn) { btn.disabled=false; btn.textContent='Login to Admin Portal'; }
+  if(r.success) {
+    errEl.classList.add('hidden');
+    document.getElementById('adm-login').classList.add('hidden');
+    document.getElementById('adm-dashboard').classList.remove('hidden');
+    admLoadData();
+  } else {
+    errEl.textContent = r.error || 'Invalid Admin ID or password.';
+    errEl.classList.remove('hidden');
+  }
+}
+
+function adminLogout() {
+  document.getElementById('adm-dashboard').classList.add('hidden');
+  document.getElementById('adm-login').classList.remove('hidden');
+  document.getElementById('adm-id').value='';
+  document.getElementById('adm-pass').value='';
+  admStudents=[]; admStudentsLoaded=false; admAllGrievances=[]; admAllLeaves=[];
+}
+
+async function admLoadData() {
+  const r = await callBackend('getAllStudents');
+  if(r.success) {
+    admStudents = r.students || [];
+    admStudentsLoaded = true;
+    admRenderStats();
+    admRenderPayList();
+  }
+  const lr = await callBackend('getAllLeaves');
+  if(lr.success) {
+    admAllLeaves = lr.leaves || [];
+    const pendingLeaves = admAllLeaves.filter(l=>l.status==='pending').length;
+    const badge = document.getElementById('adm-leave-badge');
+    if(badge) { badge.textContent=pendingLeaves; badge.style.display=pendingLeaves?'':'none'; }
+  }
+  const gr = await callBackend('getAllGrievances');
+  if(gr.success) {
+    admAllGrievances = gr.grievances || [];
+    const pendingGrv = admAllGrievances.filter(g=>g.status==='pending').length;
+    const badge = document.getElementById('adm-grv-badge');
+    if(badge) { badge.textContent=pendingGrv; badge.style.display=pendingGrv?'':'none'; }
+  }
+}
+
+function admRenderStats() {
+  const total    = admStudents.length;
+  const pending  = admStudents.filter(s=>s.status==='pending').length;
+  const approved = admStudents.filter(s=>s.status==='approved').length;
+  const pendingPay = admStudents.reduce((acc,s)=>{
+    const pays = Array.isArray(s.payments)?s.payments:[];
+    return acc + pays.filter(p=>p.status==='pending').length;
+  },0);
+  document.getElementById('adm-stats').innerHTML = [
+    ['Total Students', total],
+    ['Pending Applications', pending],
+    ['Approved Students', approved],
+    ['Pending Payments', pendingPay]
+  ].map(([l,v])=>`<div class="stat-card"><div class="val">${v}</div><div class="lbl">${l}</div></div>`).join('');
+  const payBadge = document.getElementById('adm-pay-badge');
+  if(payBadge) { payBadge.textContent=pendingPay; payBadge.style.display=pendingPay?'':'none'; }
+}
+
+function admTab(name) {
+  ['payments','allotment','unlock','leaves','grievances','nodues'].forEach(t=>{
+    const el = document.getElementById('adm-tab-'+t);
+    if(el) el.classList.toggle('hidden', t!==name);
+  });
+  document.querySelectorAll('#adm-dashboard .tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', ['payments','allotment','unlock','leaves','grievances','nodues'][i]===name);
+  });
+  if(name==='payments') admRenderPayList();
+  else if(name==='allotment') admRenderAllotmentList();
+  else if(name==='leaves') admRenderLeaves();
+  else if(name==='grievances') { admFilterGrievances('all'); }
+  else if(name==='unlock') {
+    document.getElementById('adm-unlock-email').value='';
+    document.getElementById('adm-unlock-masterkey').value='';
+    document.getElementById('adm-unlock-result').innerHTML='';
+  }
+  else if(name==='nodues') {
+    document.getElementById('adm-nd-result').classList.add('hidden');
+    // Reset all inspection radios to OK
+    ['room','bed','chair','table'].forEach(item=>{
+      const el = document.querySelector(`input[name="adm-insp-${item}"][value="ok"]`);
+      if(el) el.checked=true;
+      admInspToggle(item, false);
+    });
+  }
+}
+
+// ── PAYMENT VERIFICATION (Admin) ──
+function admRenderPayList() {
+  const list = document.getElementById('adm-pay-list');
+  if(!list) return;
+  const studentsWithPending = admStudents.filter(s=>{
+    const pays = Array.isArray(s.payments)?s.payments:[];
+    return pays.some(p=>p.status==='pending'||p.status==='rejected');
+  });
+  if(!studentsWithPending.length) {
+    list.innerHTML='<div class="alert alert-success">✅ No pending payment verifications. All receipts have been reviewed.</div>';
+    return;
+  }
+  list.innerHTML = studentsWithPending.map(s=>{
+    const allPays = (Array.isArray(s.payments)?s.payments:[]).map((p,i)=>({...p,_idx:i}));
+    const pendingPays  = allPays.filter(p=>p.status==='pending');
+    const rejectedPays = allPays.filter(p=>p.status==='rejected');
+    const isAdmission  = allPays.some(p=>p.note && p.note.includes('Admission'));
+    const safeRoll     = s.rollFull.replace(/\//g,'_');
+
+    const makePayRow = (p, isRejected) => `
+      <div style="background:${isRejected?'var(--danger-bg)':'var(--gray-50)'};border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;border:1px solid ${isRejected?'var(--danger)':'var(--gray-100)'}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600">Semester ${p.semester} — ₹${p.amount||4500}
+              ${isRejected?'<span class="badge badge-rejected" style="margin-left:6px;font-size:10px">Rejected</span>':''}
+            </div>
+            <div style="font-size:11px;color:var(--gray-600)">Receipt: <strong>${p.receipt||'—'}</strong> · ${p.paidAt?new Date(p.paidAt).toLocaleDateString('en-IN'):''}</div>
+            ${isRejected && p.rejectionComment ? `<div style="font-size:11px;color:var(--danger);margin-top:3px;font-weight:500">✗ Reason given: ${p.rejectionComment}</div>` : ''}
+            ${!isAdmission ? `
+            <div style="margin-top:8px">
+              <button class="btn btn-secondary btn-sm" style="font-size:10px"
+                onclick="admLoadSinglePayImage('${s.rollFull}',${p.semester},'adm-payimg-${safeRoll}-${p._idx}')">🖼 View Receipt</button>
+              <div id="adm-payimg-${safeRoll}-${p._idx}" style="margin-top:6px"></div>
+            </div>` : ''}
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;flex-direction:column;align-items:flex-end">
+            <button class="btn btn-success btn-sm" style="font-size:11px" onclick="admApprovePayment('${s.rollFull}',${p._idx})">✓ ${isRejected?'Re-approve':'Verify'}</button>
+            ${!isRejected?`<button class="btn btn-danger btn-sm" style="font-size:11px" onclick="admRejectPayment('${s.rollFull}',${p._idx},this)">✗ Reject</button>`:''}
+          </div>
+        </div>
+      </div>`;
+
+    return `<div class="admin-task-card">
+      <div class="task-header">
+        <div>
+          <div style="font-weight:700;font-size:14px">${s.name}</div>
+          <div class="task-meta">${s.rollFull} · <span class="badge badge-${s.status||'pending'}">${s.status||'pending'}</span></div>
+          ${isAdmission?`<div style="font-size:11px;color:var(--info);margin-top:3px;font-weight:600">📋 Admission — Reg. Fee + Caution Money + Allotment Fee</div>`:''}
+        </div>
+        <div style="font-size:12px;color:var(--gray-400)">Sem ${s.semesterNo||'—'}</div>
+      </div>
+
+      ${isAdmission ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;font-size:12px">
+        <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:8px">
+          <div style="color:var(--gray-600);margin-bottom:2px">Reg. Fee Receipt</div>
+          <strong>${s.regFeeReceipt||'—'}</strong>
+        </div>
+        <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:8px">
+          <div style="color:var(--gray-600);margin-bottom:2px">Caution Money Receipt</div>
+          <strong>${s.cautionFeeReceipt||'—'}</strong>
+        </div>
+        <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:8px">
+          <div style="color:var(--gray-600);margin-bottom:2px">Allotment Fee Receipt</div>
+          <strong>${pendingPays[0]?.receipt||rejectedPays[0]?.receipt||'—'}</strong>
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <button class="btn btn-secondary btn-sm" style="font-size:11px"
+          onclick="admLoadAdmissionImages('${s.rollFull}','adm-img-${safeRoll}')">🖼 View All Receipt Images</button>
+        <div id="adm-img-${safeRoll}" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px"></div>
+      </div>` : ''}
+
+      ${pendingPays.length ? `<div style="font-size:11px;font-weight:700;color:var(--gray-600);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px">Pending Verification</div>` : ''}
+      ${pendingPays.map(p=>makePayRow(p,false)).join('')}
+
+      ${rejectedPays.length ? `<div style="font-size:11px;font-weight:700;color:var(--danger);margin-bottom:6px;margin-top:10px;text-transform:uppercase;letter-spacing:.3px">⚠ Rejected — Awaiting Resubmission</div>` : ''}
+      ${rejectedPays.map(p=>makePayRow(p,true)).join('')}
+    </div>`;
+  }).join('');
+}
+
+// Load all three admission receipt images (reg fee, caution money, allotment fee) for admin view
+async function admLoadAdmissionImages(rollFull, containerId) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = '<div style="grid-column:1/-1;font-size:12px;color:var(--gray-400)"><span class="spinner spinner-dark"></span> Loading receipt images…</div>';
+  const imgR = await callBackend('getStudentImages', {rollFull});
+  if(!imgR.success || !imgR.images) {
+    container.innerHTML = '<div style="grid-column:1/-1" class="alert alert-danger">Could not load images.</div>';
+    return;
+  }
+  const imgs = imgR.images;
+  const slots = [
+    { key:'regFeeImage',     label:'Reg. Fee Receipt'     },
+    { key:'cautionFeeImage', label:'Caution Money Receipt' },
+    { key:'allotFeeImage',   label:'Allotment Fee Receipt' }
+  ];
+  container.innerHTML = slots.map(({key, label})=>{
+    const b64 = imgs[key];
+    if(!b64) return `<div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:10px;text-align:center;font-size:11px;color:var(--gray-400)">${label}<br/><em>No image</em></div>`;
+    return `<div style="text-align:center">
+      <img src="data:image/jpeg;base64,${b64}" alt="${label}"
+        style="width:100%;max-height:140px;object-fit:contain;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);cursor:pointer;background:#fff"
+        onclick="openImageModal('data:image/jpeg;base64,${b64}','${label}')"/>
+      <div style="font-size:10px;color:var(--gray-600);margin-top:4px;font-weight:600">${label}</div>
+      <div style="font-size:10px;color:var(--gray-400)">Tap to enlarge</div>
+    </div>`;
+  }).join('');
+}
+
+// Load a single semester payment receipt image (for non-admission semester payments)
+async function admLoadSinglePayImage(rollFull, semester, containerId) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = '<span style="font-size:11px;color:var(--gray-400)"><span class="spinner spinner-dark"></span> Loading…</span>';
+  const imgR = await callBackend('getStudentImages', {rollFull});
+  if(!imgR.success || !imgR.images) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--danger)">Could not load image.</span>';
+    return;
+  }
+  const b64 = imgR.images['payment_sem_'+semester] || imgR.images['allotFeeImage'];
+  if(!b64) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--gray-400)">No receipt image uploaded.</span>';
+    return;
+  }
+  container.innerHTML = `
+    <img src="data:image/jpeg;base64,${b64}" alt="Semester ${semester} Receipt"
+      style="max-width:180px;max-height:130px;object-fit:contain;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);cursor:pointer;display:block"
+      onclick="openImageModal('data:image/jpeg;base64,${b64}','Semester ${semester} Receipt')"/>
+    <div style="font-size:10px;color:var(--gray-400);margin-top:3px">Tap to enlarge</div>`;
+}
+
+async function admApprovePayment(rollFull, paymentIndex) {
+  const r = await callBackend('approvePayment', {rollFull, paymentIndex});
+  if(r.success) {
+    toast('Payment verified ✓', 'success');
+    const rd = await callBackend('getAllStudents');
+    if(rd.success) { admStudents=rd.students; admRenderStats(); admRenderPayList(); }
+  } else {
+    toast('Failed: '+(r.error||''), 'error');
+  }
+}
+
+function admRejectPayment(rollFull, paymentIndex, triggerBtn) {
+  const safeId = 'rej-inline-' + String(rollFull).replace(/[^a-zA-Z0-9]/g,'_') + '_' + paymentIndex;
+
+  // If already open, just focus the textarea
+  const existing = document.getElementById(safeId);
+  if(existing) { existing.querySelector('textarea')?.focus(); return; }
+
+  // Walk up from the clicked button to find the card row div
+  const targetRow = triggerBtn
+    ? (triggerBtn.closest('div[style*="border-radius:var(--radius-sm)"]') || triggerBtn.parentElement.parentElement.parentElement)
+    : null;
+  if(!targetRow) { toast('UI error — could not find payment row', 'error'); return; }
+
+  const inlineDiv = document.createElement('div');
+  inlineDiv.id = safeId;
+  inlineDiv.style.cssText = 'margin-top:10px;padding:12px;background:var(--danger-bg);border:1.5px solid var(--danger);border-radius:var(--radius-md)';
+  inlineDiv.innerHTML = `
+    <div style="font-size:12px;font-weight:600;color:var(--danger);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px">
+      ✗ Rejection Reason <span style="color:#c0392b">*</span>
+      <span style="font-weight:400;text-transform:none;font-size:11px;margin-left:4px">(student will see this)</span>
+    </div>
+    <textarea id="${safeId}-txt" rows="2"
+      placeholder="e.g. Receipt number does not match bank records, image unclear..."
+      style="width:100%;padding:8px 10px;border:1.5px solid var(--danger);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical;outline:none;background:#fff;margin-bottom:8px"></textarea>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-danger btn-sm" style="flex:2"
+        onclick="admRejectPaymentConfirm('${rollFull}',${paymentIndex},'${safeId}')">
+        ✗ Confirm Rejection
+      </button>
+      <button class="btn btn-secondary btn-sm" style="flex:1"
+        onclick="document.getElementById('${safeId}')?.remove()">
+        Cancel
+      </button>
+    </div>`;
+
+  targetRow.appendChild(inlineDiv);
+  setTimeout(() => document.getElementById(safeId + '-txt')?.focus(), 60);
+}
+
+async function admRejectPaymentConfirm(rollFull, paymentIndex, inlineId) {
+  const textarea = document.getElementById(inlineId + '-txt');
+  const comment  = textarea ? textarea.value.trim() : '';
+  if(!comment) {
+    textarea && (textarea.style.borderColor = 'var(--danger)');
+    toast('Please enter a rejection reason.', 'error');
+    textarea?.focus();
+    return;
+  }
+  const confirmBtn = document.querySelector(`#${inlineId} .btn-danger`);
+  if(confirmBtn) { confirmBtn.disabled=true; confirmBtn.innerHTML='<span class="spinner spinner-dark"></span> Rejecting…'; }
+  const r = await callBackend('rejectPayment', {rollFull, paymentIndex, comment});
+  if(r.success) {
+    toast('Receipt rejected. Student will see the reason.', 'error');
+    const rd = await callBackend('getAllStudents');
+    if(rd.success) { admStudents=rd.students; admRenderStats(); admRenderPayList(); }
+  } else {
+    toast('Failed: '+(r.error||''), 'error');
+    if(confirmBtn) { confirmBtn.disabled=false; confirmBtn.innerHTML='✗ Confirm Rejection'; }
+  }
+}
+
+// ── ACCOUNT UNLOCK (Admin) ──
+async function adminUnlockAccount() {
+  const email     = document.getElementById('adm-unlock-email')?.value.trim();
+  const masterKey = document.getElementById('adm-unlock-masterkey')?.value||'';
+  const resultDiv = document.getElementById('adm-unlock-result');
+  let ok=true;
+  if(!email) { showErr('adm-unlock-email','Student email required'); document.getElementById('err-adm-unlock-email').classList.remove('hidden'); ok=false; } else clearErr('adm-unlock-email');
+  if(!masterKey) { showErr('adm-unlock-key','Master key required'); document.getElementById('err-adm-unlock-key').classList.remove('hidden'); ok=false; } else clearErr('adm-unlock-key');
+  if(!ok) return;
+  const btn = document.getElementById('btn-adm-unlock');
+  btn.disabled=true; btn.innerHTML='<span class="spinner spinner-dark"></span> Unlocking…';
+  const r = await callBackend('adminUnlockAccount', {email, masterKey});
+  btn.disabled=false; btn.innerHTML='🔓 Unlock Account';
+  if(r.success) {
+    resultDiv.innerHTML=`<div class="alert alert-success">✅ Account for <strong>${email}</strong> has been successfully unlocked. The student can now login normally.<br/><small style="opacity:.7">Action logged by Admin Office.</small></div>`;
+    document.getElementById('adm-unlock-email').value='';
+    document.getElementById('adm-unlock-masterkey').value='';
+  } else {
+    resultDiv.innerHTML=`<div class="alert alert-danger">⚠ ${r.error||'Failed to unlock account.'}</div>`;
+  }
+}
+
+// ── LEAVE REVIEW (Admin) ──
+async function admRenderLeaves() {
+  const pendingEl = document.getElementById('adm-leave-pending');
+  const allEl     = document.getElementById('adm-leave-all');
+  if(!pendingEl) return;
+  // Refresh leave data
+  const lr = await callBackend('getAllLeaves');
+  if(!lr.success) {
+    pendingEl.innerHTML = `<div class="alert alert-danger">Failed to load leaves: ${lr.error||''}</div>`;
+    return;
+  }
+  admAllLeaves = lr.leaves || [];
+  const pending = admAllLeaves.filter(l=>l.status==='pending');
+  const others  = admAllLeaves.filter(l=>l.status!=='pending');
+
+  const badge = document.getElementById('adm-leave-badge');
+  if(badge) { badge.textContent=pending.length; badge.style.display=pending.length?'':'none'; }
+
+  const makeRow = (l, showForward) => {
+    const statusClass = l.status==='approved'?'badge-approved':l.status==='rejected'?'badge-rejected':'badge-pending';
+    const alreadyFwd  = String(l.rejectionReason||'').startsWith('[ADMIN-FWD]');
+    const fwdNote     = alreadyFwd
+      ? `<div style="font-size:11px;color:var(--info);margin-top:4px;font-style:italic">📋 Forwarded to Warden by Admin Office</div>`
+      : '';
+    const fwdBtn = showForward && !alreadyFwd
+      ? `<button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="admForwardLeave('${l.leaveId}')">📤 Forward to Warden</button>`
+      : '';
+    return `<div class="admin-task-card">
+      <div class="task-header">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:var(--navy)">${l.leaveId}</div>
+          <div style="font-weight:600;font-size:13px">${l.studentName} · ${l.rollFull}</div>
+          <div class="task-meta">${l.reason} · ${fmtDMY(l.departureDt)} → ${fmtDMY(l.returnDt)} (${l.totalDays}d)</div>
+          <div class="task-meta">Room: ${l.hostel||'—'} ${l.roomNo||''} · Mobile: ${l.mobile||'—'}</div>
+          <div class="task-meta">Address: ${l.addressDuringLeave||'—'}</div>
+          ${fwdNote}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="badge ${statusClass}">${l.status}</span>
+          ${fwdBtn}
+        </div>
+      </div>
+    </div>`;
+  };
+
+  pendingEl.innerHTML = pending.length
+    ? pending.map(l=>makeRow(l,true)).join('')
+    : '<p style="color:var(--gray-400);font-size:13px">No pending leave applications.</p>';
+  allEl.innerHTML = others.length
+    ? others.slice().reverse().map(l=>makeRow(l,false)).join('')
+    : '<p style="color:var(--gray-400);font-size:13px">No decided leave applications yet.</p>';
+}
+
+async function admForwardLeave(leaveId) {
+  openReasonModal({
+    title: 'Forward Leave to Warden',
+    label: 'Forwarding Note (optional)',
+    placeholder: 'e.g. Student eligibility verified, no pending dues, forwarding for decision...',
+    required: false,
+    confirmLabel: '📤 Forward to Warden',
+    confirmClass: 'btn-primary',
+    onConfirm: async (note) => {
+      const r = await callBackend('adminForwardLeave', {
+        leaveId,
+        note: note.trim() || 'Reviewed by Admin Office. Eligibility OK. Forwarded to Warden for decision.'
+      });
+      if(r.success) {
+        toast('Leave forwarded to Warden ✓','success');
+        admRenderLeaves();
+      } else { toast('Failed: '+(r.error||''),'error'); }
+    }
+  });
+}
+
+// ── GRIEVANCE INTAKE (Admin) ──
+function admFilterGrievances(status) {
+  ['all','pending','in-review','resolved'].forEach(f=>{
+    const btn = document.getElementById('adm-grv-f-'+f);
+    if(btn) btn.classList.toggle('btn-primary', f===status);
+    if(btn) btn.classList.toggle('btn-secondary', f!==status);
+  });
+  const list = document.getElementById('adm-grievance-list');
+  if(!list) return;
+  const data = status==='all' ? admAllGrievances : admAllGrievances.filter(g=>g.status===status);
+  if(!data.length) {
+    list.innerHTML='<p style="color:var(--gray-400);font-size:13px">No grievances found.</p>';
+    return;
+  }
+  list.innerHTML = data.slice().reverse().map(g=>{
+    const statusClass = g.status==='resolved'?'badge-approved':g.status==='in-review'?'badge-pending':'badge-pending';
+    const alreadyLogged = String(g.wardenReply||'').includes('[ADMIN');
+    return `<div class="admin-task-card">
+      <div class="task-header">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:var(--navy)">${g.grievanceId}</div>
+          <div style="font-weight:600;font-size:13px">${g.studentName} · ${g.rollFull}</div>
+          <div class="task-meta">${g.category} — ${g.subject}</div>
+          <div class="task-meta" style="margin-top:4px">${g.description}</div>
+          ${g.wardenReply?`<div style="font-size:11px;color:var(--gray-600);margin-top:6px;font-style:italic;border-left:2px solid var(--gray-200);padding-left:8px">${g.wardenReply.replace(/\n/g,'<br>')}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="badge ${statusClass}">${g.status}</span>
+          ${!alreadyLogged && g.status==='pending'
+            ? `<button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="admLogGrievanceNote('${g.grievanceId}')">📋 Log Note</button>`
+            : alreadyLogged ? `<span style="font-size:10px;color:var(--info)">Note logged</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function admLogGrievanceNote(grievanceId) {
+  openReasonModal({
+    title: 'Log Grievance Intake Note',
+    label: 'Intake Note for Warden',
+    placeholder: 'e.g. Student visited in person, complaint verified, categorised as maintenance issue, urgent...',
+    required: true,
+    confirmLabel: '📋 Log Note',
+    confirmClass: 'btn-primary',
+    onConfirm: async (note) => {
+      const r = await callBackend('adminLogNote', {grievanceId, note});
+      if(r.success) {
+        toast('Note logged. Grievance marked in-review ✓','success');
+        const gr = await callBackend('getAllGrievances');
+        if(gr.success) { admAllGrievances=gr.grievances||[]; admFilterGrievances('all'); }
+      } else { toast('Failed: '+(r.error||''),'error'); }
+    }
+  });
+}
+
+// ── ALLOTMENT PRE-FILL (Admin) ──
+function admRenderAllotmentList() {
+  const list = document.getElementById('adm-allot-list');
+  if(!list) return;
+  const pending = admStudents.filter(s=>s.status==='pending');
+  if(!pending.length) {
+    list.innerHTML='<div class="alert alert-success">No pending applications at the moment.</div>';
+    return;
+  }
+  list.innerHTML = pending.map(s=>{
+    const hi = s.hostelInfo;
+    const prefilled = hi && hi.roomNo;
+    return `<div class="admin-task-card">
+      <div class="task-header">
+        <div>
+          <div style="font-weight:700;font-size:14px">${s.name}</div>
+          <div class="task-meta">${s.rollFull} · Sem ${s.semesterNo||'—'}</div>
+          <div class="task-meta" style="margin-top:4px">${prefilled
+            ? `<span style="color:var(--success);font-weight:600">✓ Pre-filled:</span> ${hi.hostel} · Room ${hi.roomNo} · Bed ${hi.bedNo||'—'} · Chair ${hi.chairNo||'—'} · Table ${hi.tableNo||'—'}`
+            : '<span style="color:var(--warning)">⚠ Accommodation not yet filled</span>'}</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="font-size:11px" onclick="admAllotPrefill('${s.rollFull}')">
+          ${prefilled?'✏ Edit':'+ Fill'} Room
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function admAllotPrefill(rollFull) {
+  const s = admStudents.find(x=>x.rollFull===rollFull);
+  if(!s) return;
+  const no = rollFull.split('/')[0]||'';
+  const br = rollFull.split('/')[1]||'CSE';
+  const yr = rollFull.split('/')[2]||'';
+  document.getElementById('adm-allot-roll-no').value   = no;
+  document.getElementById('adm-allot-roll-branch').value= br;
+  document.getElementById('adm-allot-roll-year').value  = yr;
+  admAllotSearch();
+}
+
+async function admAllotSearch() {
+  const no = document.getElementById('adm-allot-roll-no')?.value.trim();
+  const br = document.getElementById('adm-allot-roll-branch')?.value;
+  const yr = document.getElementById('adm-allot-roll-year')?.value.trim();
+  if(!no||!yr) { toast('Enter complete roll number','error'); return; }
+  const rollFull = `${no}/${br}/${yr}`;
+  const s = admStudents.find(x=>x.rollFull===rollFull);
+  const resultDiv = document.getElementById('adm-allot-result');
+  const infoDiv   = document.getElementById('adm-allot-student-info');
+  const msgDiv    = document.getElementById('adm-allot-msg');
+  msgDiv.innerHTML='';
+
+  if(!s) {
+    infoDiv.innerHTML=`<div class="alert alert-danger">Student not found in current data. Only approved/pending students are listed.</div>`;
+    resultDiv.classList.remove('hidden'); return;
+  }
+  if(s.status==='alumni') {
+    infoDiv.innerHTML=`<div class="alert alert-warning">This student is an alumni. Accommodation edits are done via Warden panel.</div>`;
+    resultDiv.classList.remove('hidden'); return;
+  }
+
+  const hi = s.hostelInfo||{};
+  infoDiv.innerHTML = `
+    <div class="info-grid">
+      <div class="info-item"><div class="key">Student</div><div class="val">${s.name}</div></div>
+      <div class="info-item"><div class="key">Roll No.</div><div class="val">${s.rollFull}</div></div>
+      <div class="info-item"><div class="key">Status</div><div class="val"><span class="badge badge-${s.status||'pending'}">${s.status||'pending'}</span></div></div>
+      <div class="info-item"><div class="key">Semester</div><div class="val">${s.semesterNo||'—'}</div></div>
+    </div>`;
+
+  // Pre-populate form with existing hostelInfo if any
+  if(hi.hostel) {
+    const hSel = document.getElementById('adm-allot-hostel');
+    if(hSel) for(let o of hSel.options) if(o.value===hi.hostel) o.selected=true;
+  }
+  document.getElementById('adm-allot-room').value  = hi.roomNo  ||'';
+  document.getElementById('adm-allot-bed').value   = hi.bedNo   ||'';
+  document.getElementById('adm-allot-chair').value = hi.chairNo ||'';
+  document.getElementById('adm-allot-table').value = hi.tableNo ||'';
+  resultDiv.classList.remove('hidden');
+}
+
+async function admSaveAllotment() {
+  const no = document.getElementById('adm-allot-roll-no')?.value.trim();
+  const br = document.getElementById('adm-allot-roll-branch')?.value;
+  const yr = document.getElementById('adm-allot-roll-year')?.value.trim();
+  const rollFull = `${no}/${br}/${yr}`;
+  const hostelInfo = {
+    hostel:  document.getElementById('adm-allot-hostel')?.value,
+    roomNo:  document.getElementById('adm-allot-room')?.value.trim(),
+    bedNo:   document.getElementById('adm-allot-bed')?.value.trim(),
+    chairNo: document.getElementById('adm-allot-chair')?.value.trim(),
+    tableNo: document.getElementById('adm-allot-table')?.value.trim()
+  };
+  let ok=true;
+  if(!hostelInfo.roomNo)  { showErr('adm-allot-room','Room required');  document.getElementById('err-adm-allot-room').classList.remove('hidden');  ok=false; } else clearErr('adm-allot-room');
+  if(!hostelInfo.bedNo)   { showErr('adm-allot-bed','Bed required');    document.getElementById('err-adm-allot-bed').classList.remove('hidden');   ok=false; } else clearErr('adm-allot-bed');
+  if(!hostelInfo.chairNo) { showErr('adm-allot-chair','Chair required');document.getElementById('err-adm-allot-chair').classList.remove('hidden'); ok=false; } else clearErr('adm-allot-chair');
+  if(!hostelInfo.tableNo) { showErr('adm-allot-table','Table required');document.getElementById('err-adm-allot-table').classList.remove('hidden'); ok=false; } else clearErr('adm-allot-table');
+  if(!ok) return;
+
+  const btn = document.getElementById('btn-adm-allot');
+  btn.disabled=true; btn.innerHTML='<span class="spinner spinner-dark"></span> Saving…';
+  const r = await callBackend('adminAllotAccommodation', {rollFull, hostelInfo});
+  btn.disabled=false; btn.innerHTML='💾 Save Accommodation — Forward to Warden';
+
+  const msgDiv = document.getElementById('adm-allot-msg');
+  if(r.success) {
+    msgDiv.innerHTML=`<div class="alert alert-success">✅ Accommodation saved. Warden can now see pre-filled details and approve.<br/><small style="opacity:.7">Room: ${hostelInfo.hostel} · ${hostelInfo.roomNo} · Bed ${hostelInfo.bedNo} · Chair ${hostelInfo.chairNo} · Table ${hostelInfo.tableNo}</small></div>`;
+    toast('Accommodation forwarded to Warden ✓','success');
+    // Refresh local student cache
+    const rd = await callBackend('getAllStudents');
+    if(rd.success) { admStudents=rd.students; admRenderAllotmentList(); }
+  } else {
+    msgDiv.innerHTML=`<div class="alert alert-danger">⚠ ${r.error||'Failed to save.'}</div>`;
+  }
+}
+
+// ── NO DUES PRE-CHECK with physical inspection (Admin) ──
+function admInspToggle(item, damaged) {
+  const wrap = document.getElementById('adm-insp-note-wrap-'+item);
+  const card = document.getElementById('adm-insp-card-'+item);
+  if(!wrap) return;
+  wrap.classList.toggle('hidden', !damaged);
+  if(card) {
+    card.style.borderColor = damaged ? 'var(--danger)' : 'var(--gray-100)';
+    card.style.background  = damaged ? 'var(--danger-bg)' : '';
+  }
+}
+
+let admNdCurrentRoll = null;
+
+async function admNdFetchStudent() {
+  const no = document.getElementById('adm-nd-roll-no')?.value.trim();
+  const br = document.getElementById('adm-nd-roll-branch')?.value;
+  const yr = document.getElementById('adm-nd-roll-year')?.value.trim();
+  if(!no||!yr) { toast('Enter complete roll number','error'); return; }
+  admNdCurrentRoll = `${no}/${br}/${yr}`;
+  const s = admStudents.find(x=>x.rollFull===admNdCurrentRoll);
+  const resultDiv = document.getElementById('adm-nd-result');
+  const infoDiv   = document.getElementById('adm-nd-student-info');
+  const finDiv    = document.getElementById('adm-nd-financial');
+  document.getElementById('adm-nd-final-result').innerHTML='';
+
+  if(!s) {
+    infoDiv.innerHTML=`<div class="alert alert-danger">Student not found.</div>`;
+    finDiv.innerHTML=''; resultDiv.classList.remove('hidden'); return;
+  }
+
+  const hi = s.hostelInfo||{};
+  infoDiv.innerHTML = `
+    <div class="info-grid">
+      <div class="info-item"><div class="key">Student</div><div class="val">${s.name}</div></div>
+      <div class="info-item"><div class="key">Roll No.</div><div class="val">${s.rollFull}</div></div>
+      <div class="info-item"><div class="key">Status</div><div class="val"><span class="badge badge-${s.status==='approved'?'approved':'pending'}">${s.status}</span></div></div>
+      <div class="info-item"><div class="key">Hostel / Room</div><div class="val">${hi.hostel||'—'} / ${hi.roomNo||'—'}</div></div>
+      <div class="info-item"><div class="key">Bed</div><div class="val">${hi.bedNo||'—'}</div></div>
+      <div class="info-item"><div class="key">Chair / Table</div><div class="val">${hi.chairNo||'—'} / ${hi.tableNo||'—'}</div></div>
+    </div>`;
+
+  // Financial snapshot from local cache
+  const payments = Array.isArray(s.payments)?s.payments:[];
+  const fines    = Array.isArray(s.fines)?s.fines:[];
+  const outstanding = fines.reduce((a,f)=>a+(f.revoked||(f.paid&&f.paymentVerified)?0:Number(f.amount||0)),0);
+  const pendingPay  = payments.filter(p=>p.status==='pending').length;
+  const approvedPay = payments.filter(p=>p.status==='approved').length;
+  finDiv.innerHTML = `
+    <div class="section-heading">Financial Pre-Check (Auto)</div>
+    <div class="dues-check-row ${outstanding===0?'dues-ok':'dues-bad'}">Outstanding Fines <strong>${outstanding===0?'NIL':'₹'+outstanding}</strong></div>
+    <div class="dues-check-row ${pendingPay===0?'dues-ok':'dues-bad'}">Pending Payments <strong>${pendingPay===0?'NIL':pendingPay+' unverified'}</strong></div>
+    <div class="dues-check-row ${approvedPay>0?'dues-ok':'dues-bad'}">Verified Payments <strong>${approvedPay} approved</strong></div>`;
+
+  resultDiv.classList.remove('hidden');
+}
+
+async function admRunNoDuesCheck() {
+  if(!admNdCurrentRoll) { toast('Fetch a student first','error'); return; }
+  const inspection = {};
+  let validationOk = true;
+  for(const item of ['room','bed','chair','table']) {
+    const isDamaged = document.querySelector(`input[name="adm-insp-${item}"]:checked`)?.value === 'damaged';
+    const note = document.getElementById('adm-insp-note-'+item)?.value.trim()||'';
+    if(isDamaged && !note) {
+      toast(`Please describe the ${item} damage before running the check.`,'error');
+      validationOk = false; break;
+    }
+    inspection[item] = { damaged: isDamaged, note };
+  }
+  if(!validationOk) return;
+
+  const btn = document.getElementById('btn-adm-nd-check');
+  btn.disabled=true; btn.innerHTML='<span class="spinner spinner-dark"></span> Running check…';
+  const r = await callBackend('adminNoDuesFullCheck', {rollFull:admNdCurrentRoll, inspection});
+  btn.disabled=false; btn.innerHTML='🔍 Run Full Pre-Check';
+
+  const finalDiv = document.getElementById('adm-nd-final-result');
+  if(!r.success) { finalDiv.innerHTML=`<div class="alert alert-danger">⚠ ${r.error||'Failed.'}</div>`; return; }
+
+  let html = '';
+  // Physical damage results
+  if(r.damages && r.damages.length > 0) {
+    html += `<div class="section-heading" style="margin-top:16px;color:var(--danger)">⚠ Damage Found — Fine Suggestions for Warden</div>`;
+    html += `<div style="background:var(--danger-bg);border:1px solid var(--danger);border-radius:var(--radius-md);padding:14px;margin-bottom:12px">
+      <p style="font-size:13px;color:var(--danger);margin-bottom:10px">The following damage was recorded during physical inspection. Please inform the Warden to impose fines before issuing No Dues:</p>
+      <table class="data-table">
+        <thead><tr><th>Item</th><th>Damage Note</th><th>Suggested Fine</th></tr></thead>
+        <tbody>
+          ${r.damages.map(d=>`<tr>
+            <td style="font-weight:600;text-transform:capitalize">${d.label}</td>
+            <td>${d.note||'—'}</td>
+            <td style="color:var(--danger);font-weight:700">₹${d.suggestedAmount}</td>
+          </tr>`).join('')}
+          <tr style="background:var(--danger-bg)">
+            <td colspan="2" style="font-weight:700;color:var(--danger)">Total Suggested Fine</td>
+            <td style="font-weight:700;color:var(--danger)">₹${r.suggestedFineTotal}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="admin-delegation-note" style="margin-top:10px;margin-bottom:0">
+        📋 Please inform the Warden to impose ₹${r.suggestedFineTotal} in damage fines before issuing the No Dues Certificate.
+        The warden must impose these fines from the <strong>Warden Dashboard → Fines tab</strong>.
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="dues-check-row dues-ok" style="margin-top:16px">Physical Inspection <strong>No damage found — All items OK ✓</strong></div>`;
+  }
+
+  // Final verdict
+  const icon  = r.fullyCleared ? '✅' : r.financiallyClear && !r.physicallyClear ? '⚠️' : '🚫';
+  const cls   = r.fullyCleared ? 'alert-success' : 'alert-warning';
+  html += `<div class="alert ${cls}" style="margin-top:12px">${icon} ${r.summary}</div>`;
+  if(r.fullyCleared) {
+    html += `<div class="admin-delegation-note" style="margin-top:8px">
+      📋 Pre-check complete. Inform the Warden that <strong>${r.studentName}</strong> (${r.rollFull}) is fully cleared for No Dues Certificate issuance.
+    </div>`;
+  }
+  finalDiv.innerHTML = html;
+}
+
+// ── SHARED REASON MODAL ────────────────────────────────────────────────────────
+// Replaces all browser prompt() calls. Options:
+//   title, label, placeholder, required (bool), confirmLabel, confirmClass, onConfirm(text)
+let _reasonModalCallback = null;
+
+function openReasonModal(opts) {
+  _reasonModalCallback = opts.onConfirm || null;
+  const modal = document.getElementById('reason-modal');
+  document.getElementById('reason-modal-title').textContent   = opts.title       || 'Enter Reason';
+  document.getElementById('reason-modal-label').textContent   = opts.label       || 'Reason';
+  document.getElementById('reason-modal-textarea').placeholder= opts.placeholder || '';
+  document.getElementById('reason-modal-textarea').value      = '';
+  document.getElementById('reason-modal-err').classList.add('hidden');
+  document.getElementById('reason-modal-required').style.display = opts.required ? '' : 'none';
+  const confirmBtn = document.getElementById('reason-modal-confirm');
+  confirmBtn.textContent = opts.confirmLabel || 'Confirm';
+  confirmBtn.className = 'btn ' + (opts.confirmClass || 'btn-primary');
+  document.getElementById('reason-modal-optional-hint').style.display = opts.required ? 'none' : '';
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('reason-modal-textarea').focus(), 80);
+}
+
+function closeReasonModal() {
+  const modal = document.getElementById('reason-modal');
+  modal.classList.add('hidden');
+  modal.style.display = 'none';
+  _reasonModalCallback = null;
+}
+
+async function submitReasonModal() {
+  const text = document.getElementById('reason-modal-textarea').value.trim();
+  const required = document.getElementById('reason-modal-required').style.display !== 'none';
+  if(required && !text) {
+    document.getElementById('reason-modal-err').textContent = 'This field is required.';
+    document.getElementById('reason-modal-err').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('reason-modal-err').classList.add('hidden');
+  const cb = _reasonModalCallback;
+  closeReasonModal();
+  if(cb) await cb(text);
+}
+
+// Close on Escape key
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') {
+    const rm = document.getElementById('reason-modal');
+    if(rm && !rm.classList.contains('hidden')) closeReasonModal();
+    const rsm = document.getElementById('resubmit-modal');
+    if(rsm && !rsm.classList.contains('hidden')) closeResubmitModal();
+  }
+});
+
+// ── RE-GENERATE LEAVE PDF (warden) ──────────────────────────────────────────────
+// Calls decideLeave with action='approved' again — GAS re-runs makeLeavePDF
+// and overwrites the old file in Drive, returning the fresh URL.
+async function regenLeavePDF(leaveId, btn) {
+  if(!confirm('Re-generate the approval letter PDF for leave ' + leaveId + '?\nThe Drive file will be overwritten with a fresh copy.')) return;
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner spinner-dark"></span> Generating...';
+  const r = await callBackend('decideLeave', {leaveId, decision:'approved', reason:'', regenOnly:true});
+  btn.disabled = false;
+  btn.textContent = origText;
+  if(r.success) {
+    toast('PDF re-generated successfully!', 'success');
+    await loadWardenLeaves();
+  } else {
+    toast('Re-generate failed: ' + (r.error || 'Unknown error'), 'error');
+  }
+}
+
+</script>
+</script>
+</body>
+</html>
