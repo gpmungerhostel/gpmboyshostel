@@ -1628,6 +1628,28 @@ function fmtDMY(raw) {
 
 // TOAST
 // ══════════════════════════════════════════════════════════
+// ── GLOBAL DATE FORMATTER ──
+// Formats a DOB value (ISO timestamp or YYYY-MM-DD) to "12th May 2008" style.
+// Handles ISO timestamps like "2008-10-04T18:30:00.000Z" correctly by parsing
+// the date components directly to avoid timezone-shift bugs.
+function formatDOB(v) {
+  if(!v) return '—';
+  const s = String(v).trim();
+  // Extract YYYY-MM-DD from ISO string or plain date
+  const match = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!match) return s;
+  const year = parseInt(match[1],10);
+  const month = parseInt(match[2],10) - 1; // 0-based
+  const day   = parseInt(match[3],10);
+  const months = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  const suffix = (d) => {
+    if(d>=11&&d<=13) return 'th';
+    switch(d%10){case 1:return 'st';case 2:return 'nd';case 3:return 'rd';default:return 'th';}
+  };
+  return day + suffix(day) + ' ' + months[month] + ' ' + year;
+}
+
 function toast(msg, type='') {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -2061,14 +2083,8 @@ function renderStudentProfile() {
   }
 
   // Info grid
-  const formatDate = (v) => {
-    if(!v) return '—';
-    const d = new Date(v);
-    if(!isNaN(d)) return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
-    return String(v).split('T')[0];
-  };
   document.getElementById('cs-info-grid').innerHTML = [
-    ['Date of Birth', formatDate(s.dob)],['Email', s.email],
+    ['Date of Birth', formatDOB(s.dob)],['Email', s.email],
     ['Contact', s.contactNo],['Guardian Contact', s.guardianContact],
     ['Guardian', s.guardianName],['Semester', s.semesterNo],
     ['District / PIN', (s.district||'—')+' — '+( s.pin||'—')],
@@ -2814,7 +2830,7 @@ async function openApprove(rollFull, viewOnly=false) {
 
   // Basic info grid
   document.getElementById('wr-approve-info').innerHTML = [
-    ['Name',s.name],['Roll No.',s.rollFull],['DOB',s.dob],['Email',s.email],
+    ['Name',s.name],['Roll No.',s.rollFull],['DOB',formatDOB(s.dob)],['Email',s.email],
     ['Contact',s.contactNo],['Guardian',s.guardianName],['G.Contact',s.guardianContact],
     ['District / PIN',(s.district||'—')+' — '+(s.pin||'—')],
     ['Permanent Address',(s.address||'—')+(s.district?', '+s.district:'')+(s.pin?', PIN '+s.pin:'')],
@@ -4696,9 +4712,6 @@ function admRenderPayList() {
     const safeRoll     = s.rollFull.replace(/\//g,'_');
 
     const makePayRow = (p, isRejected) => {
-      // A row is an "admission row" only if THIS specific payment has the Admission note.
-      // Sem 2+ payments (no such note) always get their own "View Receipt" button.
-      const isThisAdmission = p.note && p.note.includes('Admission');
       return `
       <div style="background:${isRejected?'var(--danger-bg)':'var(--gray-50)'};border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;border:1px solid ${isRejected?'var(--danger)':'var(--gray-100)'}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
@@ -4708,12 +4721,11 @@ function admRenderPayList() {
             </div>
             <div style="font-size:11px;color:var(--gray-600)">Receipt: <strong>${p.receipt||'—'}</strong> · ${p.paidAt?new Date(p.paidAt).toLocaleDateString('en-IN'):''}</div>
             ${isRejected && p.rejectionComment ? `<div style="font-size:11px;color:var(--danger);margin-top:3px;font-weight:500">✗ Reason given: ${p.rejectionComment}</div>` : ''}
-            ${!isThisAdmission ? `
             <div style="margin-top:8px">
               <button class="btn btn-secondary btn-sm" style="font-size:10px"
                 onclick="admLoadSinglePayImage('${s.rollFull}',${p.semester},'adm-payimg-${safeRoll}-${p._idx}')">🖼 View Receipt</button>
               <div id="adm-payimg-${safeRoll}-${p._idx}" style="margin-top:6px"></div>
-            </div>` : ''}
+            </div>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0;flex-direction:column;align-items:flex-end">
             <button class="btn btn-success btn-sm" style="font-size:11px" onclick="admApprovePayment('${s.rollFull}',${p._idx})">✓ ${isRejected?'Re-approve':'Verify'}</button>
@@ -4789,13 +4801,17 @@ async function admLoadAdmissionImages(rollFull, containerId) {
 }
 
 // FIX #2: Single semester payment receipt via getOneImage (one Drive file, not all 18)
+// Works for ANY semester a student was admitted in (Sem 1, 3, 5, etc.) because
+// newStudent() always saves the allotment image under BOTH "allotFeeImage" AND
+// "payment_sem_N", so the primary lookup always hits first.
 async function admLoadSinglePayImage(rollFull, semester, containerId) {
   const container = document.getElementById(containerId);
   if(!container) return;
   container.innerHTML = '<span style="font-size:11px;color:var(--gray-400)"><span class="spinner spinner-dark"></span> Loading…</span>';
-  // Try payment_sem_N, fall back to allotFeeImage for the initial admission semester
+  // Primary: payment_sem_N (covers all semesters including admission semester)
   let r = await callBackend('getOneImage', {rollFull, type:'payment_sem_'+semester});
   let b64 = (r.success && r.image) ? r.image : null;
+  // Fallback: allotFeeImage (for older records saved before payment_sem_N slot was added)
   if(!b64) {
     const fb = await callBackend('getOneImage', {rollFull, type:'allotFeeImage'});
     b64 = (fb.success && fb.image) ? fb.image : null;
@@ -4804,10 +4820,11 @@ async function admLoadSinglePayImage(rollFull, semester, containerId) {
     container.innerHTML = '<span style="font-size:11px;color:var(--gray-400)">No receipt image uploaded.</span>';
     return;
   }
+  const label = 'Semester ' + semester + ' Fee Receipt';
   container.innerHTML = `
-    <img src="data:image/jpeg;base64,${b64}" alt="Semester ${semester} Receipt"
+    <img src="data:image/jpeg;base64,${b64}" alt="${label}"
       style="max-width:180px;max-height:130px;object-fit:contain;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);cursor:pointer;display:block"
-      onclick="openImageModal('data:image/jpeg;base64,${b64}','Semester ${semester} Receipt')"/>
+      onclick="openImageModal('data:image/jpeg;base64,${b64}','${label}')"/>
     <div style="font-size:10px;color:var(--gray-400);margin-top:3px">Tap to enlarge</div>`;
 }
 
@@ -5253,7 +5270,7 @@ function admOpenDetail(rollFull) {
 
   const fields = [
     ['Name', s.name], ['Roll No.', s.rollFull],
-    ['DOB', s.dob], ['Email', s.email],
+    ['DOB', formatDOB(s.dob)], ['Email', s.email],
     ['Contact', s.contactNo], ['Guardian', s.guardianName],
     ['G.Contact', s.guardianContact],
     ['District / PIN', (s.district||'—') + ' — ' + (s.pin||'—')],
