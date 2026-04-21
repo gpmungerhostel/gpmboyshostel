@@ -344,7 +344,7 @@
     <div class="field">
       <label>Roll Number <span class="req">*</span></label>
       <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px">
-        <input type="text" id="ns-roll-no" maxlength="2" placeholder="25" oninput="updateRollPreview()" style="text-align:center;font-weight:600"/>
+        <input type="text" id="ns-roll-no" maxlength="3" placeholder="25" oninput="updateRollPreview()" style="text-align:center;font-weight:600"/>
         <select id="ns-roll-branch" onchange="updateRollPreview()" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
           <option>CE</option><option selected>CSE</option><option>EE</option>
           <option>EC</option><option>FTS</option><option>ME</option>
@@ -567,7 +567,7 @@
         <div class="field">
           <label>Roll Number <span class="req">*</span></label>
           <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px">
-            <input type="text" id="reg-roll-no" maxlength="2" placeholder="25" style="text-align:center;font-weight:600"/>
+            <input type="text" id="reg-roll-no" maxlength="3" placeholder="25" style="text-align:center;font-weight:600"/>
             <select id="reg-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
               <option>CE</option><option selected>CSE</option><option>EE</option><option>EC</option><option>FTS</option><option>ME</option>
             </select>
@@ -1016,7 +1016,7 @@
           <label>Search Student by Roll Number</label>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px;flex:1">
-              <input type="text" id="nd-roll-no" maxlength="2" placeholder="25" style="text-align:center;font-weight:600"/>
+              <input type="text" id="nd-roll-no" maxlength="3" placeholder="25" style="text-align:center;font-weight:600"/>
               <select id="nd-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
                 <option>CE</option><option selected>CSE</option><option>EE</option>
                 <option>EC</option><option>FTS</option><option>ME</option>
@@ -1291,7 +1291,7 @@
           <label>Search Student by Roll Number</label>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
             <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px;flex:1">
-              <input type="text" id="adm-nd-roll-no" maxlength="2" placeholder="25" style="text-align:center;font-weight:600"/>
+              <input type="text" id="adm-nd-roll-no" maxlength="3" placeholder="25" style="text-align:center;font-weight:600"/>
               <select id="adm-nd-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
                 <option>CE</option><option selected>CSE</option><option>EE</option>
                 <option>EC</option><option>FTS</option><option>ME</option>
@@ -1813,7 +1813,7 @@ function nsValidate(step) {
     if(!getVal('ns-guardian')) { showErr('ns-guardian','Guardian name is required'); ok=false; } else clearErr('ns-guardian');
     const rno = document.getElementById('ns-roll-no')?.value.trim();
     const ryr = document.getElementById('ns-roll-year')?.value.trim();
-    if(!/^\d{2}$/.test(rno)) { showErr('ns-roll','Roll number must be exactly 2 digits'); ok=false; }
+    if(!/^\d{1,3}$/.test(rno)) { showErr('ns-roll','Roll number must be 1–3 digits'); ok=false; }
     else if(!/^\d{4}$/.test(ryr)) { showErr('ns-roll','Year must be 4 digits'); ok=false; }
     else clearErr('ns-roll');
     if(!getVal('ns-dob')) { showErr('ns-dob','Date of birth is required'); ok=false; } else clearErr('ns-dob');
