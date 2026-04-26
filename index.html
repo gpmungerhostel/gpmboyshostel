@@ -2062,12 +2062,27 @@ document.addEventListener('DOMContentLoaded', () => {
   updateRollPreview();
   // Auto-format text inputs to standard case
   applyInputFormatting();
+
+  // If the page is opened with a hash (e.g. bookmarked or browser back lands here),
+  // render the matching section. Falls back to 'home' for unknown hashes.
+  const VALID = ['home','new-student','continuing','warden','admin','download-letter'];
+  const initHash = location.hash.replace('#','');
+  if(initHash && VALID.includes(initHash) && initHash !== 'home') {
+    _renderSection(initHash);
+  }
 });
 
 // ══════════════════════════════════════════════════════════
-// NAVIGATION
+// NAVIGATION  (browser back/forward + home button support)
 // ══════════════════════════════════════════════════════════
-function showSection(name) {
+
+/**
+ * Core renderer — shows one section, hides all others,
+ * updates the active header button, and refreshes stale data.
+ * Does NOT touch history — called both by showSection() and
+ * the popstate handler so we never double-push entries.
+ */
+function _renderSection(name) {
   ['home','new-student','continuing','warden','admin','download-letter'].forEach(s => {
     const el = document.getElementById('sec-'+s);
     if(el) el.classList.toggle('hidden', s !== name);
@@ -2077,11 +2092,15 @@ function showSection(name) {
     b.classList.toggle('active', ids[i] === name);
   });
   currentSection = name;
-  // Reset download-letter page state on each visit
-  if(name === 'download-letter') dlReset();
+
+  // ── Per-section refresh logic ──────────────────────────
+  if(name === 'download-letter') {
+    dlReset();
+  }
+
   if(name === 'warden') {
-    const dashboard = document.getElementById('wr-dashboard');
-    const panel     = document.getElementById('wr-approve-panel');
+    const dashboard  = document.getElementById('wr-dashboard');
+    const panel      = document.getElementById('wr-approve-panel');
     const isLoggedIn = dashboard && !dashboard.classList.contains('hidden');
     if(isLoggedIn) {
       if(panel && !panel.classList.contains('hidden')) {
@@ -2096,15 +2115,47 @@ function showSection(name) {
       loadWardenGrievances();
     }
   }
+
   if(name === 'admin') {
-    const dashboard = document.getElementById('adm-dashboard');
+    const dashboard  = document.getElementById('adm-dashboard');
     const isLoggedIn = dashboard && !dashboard.classList.contains('hidden');
     if(isLoggedIn) {
       admTab('payments');
     }
   }
+
+  // Refresh student portal if the student is already logged in
+  if(name === 'continuing') {
+    if(csStudent) {
+      renderStudentProfile();
+      loadMyLeaves();
+      csTab('info');  // reset to the first tab so the view is fresh
+    }
+  }
+
   window.scrollTo({top:0, behavior:'smooth'});
 }
+
+/**
+ * Public navigation function — called by every button/link.
+ * Uses location.hash for back/forward support.
+ * Wrapped in try/catch so it works safely in file://, GAS iframes,
+ * and any sandbox that blocks history/hash writes.
+ */
+function showSection(name) {
+  if(currentSection !== name) {
+    try { location.hash = name; } catch(e) { /* sandboxed — ignore */ }
+  }
+  _renderSection(name);
+}
+
+// Handle browser back / forward via hashchange
+window.addEventListener('hashchange', function() {
+  const VALID = ['home','new-student','continuing','warden','admin','download-letter'];
+  const hash  = location.hash.replace('#','');
+  const name  = VALID.includes(hash) ? hash : 'home';
+  if(name !== currentSection) _renderSection(name);
+});
 
 // ══════════════════════════════════════════════════════════
 // ══════════════════════════════════════════════════════════
