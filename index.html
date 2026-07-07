@@ -571,7 +571,7 @@
         <div class="err-msg hidden" id="err-dl-email"></div>
       </div>
       <div class="field">
-        <label>Access Key <span style="font-weight:400;text-transform:none;font-size:11px">(optional — required only if your letter has been issued)</span></label>
+        <label>Access Key <span class="req">*</span></label>
         <div style="position:relative">
           <input type="password" id="dl-access-key" placeholder="Your personal Access Key"
             autocomplete="off" style="padding-right:44px"/>
@@ -587,7 +587,7 @@
         🔍 Verify &amp; Get Letter
       </button>
       <div style="margin-top:14px;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-md);font-size:12px;color:var(--gray-600)">
-        <strong>Rejected application?</strong> Just enter your registered email above (Access Key not needed) to see the rejection reason and edit your application.
+        <strong>Application rejected?</strong> Enter your registered Email + Access Key above to see the rejection reason and edit your application.
       </div>
     </div>
 
@@ -2464,7 +2464,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // 1. Log it to the console (F12 → Console)
 // 2. Display it in a visible banner on the Download Provisional Letter page
 // If the version doesn't say "v20.4", the new code hasn't been deployed yet.
-const EXPECTED_BACKEND_VERSION = 'v20.4';
+const EXPECTED_BACKEND_VERSION = 'v20.5';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -10022,13 +10022,16 @@ function dlReset() {
 
 async function verifyAndDownload() {
   clearErr('dl-email'); clearErr('dl-access-key'); clearErr('dl-verify');
+  // Clear the debug alert
+  const debugAlert = document.getElementById('dl-debug-alert');
+  if(debugAlert) debugAlert.classList.add('hidden');
+
   const email = (document.getElementById('dl-email')?.value || '').trim().toLowerCase();
   const key   = (document.getElementById('dl-access-key')?.value || '').trim();
   let ok = true;
   if(!email) { showErr('dl-email','Email is required'); ok=false; }
   else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('dl-email','Enter a valid email address'); ok=false; }
-  // NOTE: Access Key is now OPTIONAL — rejected applications don't require it.
-  // The backend determines what to do based on the application status.
+  if(!key)   { showErr('dl-access-key','Access Key is required'); ok=false; }
   if(!ok) return;
 
   const btn = document.getElementById('dl-verify-btn');
@@ -10049,27 +10052,8 @@ async function verifyAndDownload() {
   if(!r.success) {
     // Show error inline — keep form visible so user can retry
     console.log('[verifyAndDownload] Error:', r.error);
-    let errorMsg = r.error || 'Verification failed. Please check and try again.';
-    // If debug info is available, append it to help diagnose the issue
-    if(r._debug) {
-      console.log('[verifyAndDownload] Debug info:', r._debug);
-      errorMsg += '\n\n[Debug] Status found: ' + (r._debug.status || '(empty)') +
-                  '\nRoll: ' + (r._debug.rollFull || '(unknown)') +
-                  '\nEmail in sheet: ' + (r._debug.emailFound || '(unknown)');
-    }
-    showErr('dl-verify', errorMsg);
+    showErr('dl-verify', r.error || 'Verification failed. Please check and try again.');
     document.getElementById('err-dl-verify').classList.remove('hidden');
-    // Also show a visible alert with the debug info
-    const debugAlert = document.getElementById('dl-debug-alert');
-    if(debugAlert) {
-      debugAlert.innerHTML = '<strong>Debug info:</strong> ' +
-        'Status in sheet: <code>' + (r._debug?.status || 'N/A') + '</code>, ' +
-        'Roll: <code>' + (r._debug?.rollFull || 'N/A') + '</code>, ' +
-        'Email: <code>' + (r._debug?.emailFound || 'N/A') + '</code>. ' +
-        'If the status is not "rejected", the application may not be marked as rejected in the sheet, ' +
-        'or the data may be in the wrong column. Open F12 → Console for full details.';
-      debugAlert.classList.remove('hidden');
-    }
     return;
   }
 
