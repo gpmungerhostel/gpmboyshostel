@@ -632,6 +632,7 @@
         <button class="tab-btn active" onclick="authTab('login')">Login</button>
         <button class="tab-btn" onclick="authTab('register')">Register</button>
         <button class="tab-btn" onclick="authTab('forgot')">Forgot Password</button>
+        <button class="tab-btn" onclick="authTab('resetold')">Reset Password</button>
       </div>
 
       <!-- Login Form -->
@@ -717,6 +718,41 @@
           <div class="err-msg hidden" id="err-reset" style="margin-bottom:10px"></div>
           <button class="btn btn-primary btn-full" onclick="doReset()">Reset Password</button>
         </div>
+      </div>
+
+      <!-- v26.3: Reset Password using Old Password (no email reset code needed) -->
+      <div id="auth-resetold" class="hidden">
+        <div class="card-title" style="font-size:16px;margin-bottom:4px">Reset Password</div>
+        <div class="card-subtitle">Know your current password? Set a new one directly — no email reset code needed.</div>
+        <div class="alert alert-info" style="font-size:12px;margin:10px 0">
+          💡 Enter your <strong>current password</strong> (the one you use to log in) and your <strong>new password</strong>.
+          Your new password will be stored securely and you can use it to log in immediately.
+        </div>
+        <div class="field">
+          <label>Email ID <span class="req">*</span></label>
+          <input type="email" id="resetold-email" placeholder="your@email.com"/>
+        </div>
+        <div class="field">
+          <label>Current Password <span class="req">*</span></label>
+          <div style="position:relative">
+            <input type="password" id="resetold-old-pwd" placeholder="Your current password"/>
+            <button type="button" onclick="togglePwd('resetold-old-pwd','eye-resetold-old')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;z-index:2;font-size:18px" id="eye-resetold-old">👁</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>New Password <span class="req">*</span></label>
+          <div style="position:relative">
+            <input type="password" id="resetold-new-pwd" placeholder="At least 4 characters"/>
+            <button type="button" onclick="togglePwd('resetold-new-pwd','eye-resetold-new')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;z-index:2;font-size:18px" id="eye-resetold-new">👁</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Confirm New Password <span class="req">*</span></label>
+          <input type="password" id="resetold-cpwd" placeholder="Re-enter new password"/>
+        </div>
+        <div class="err-msg hidden" id="err-resetold" style="margin-bottom:10px"></div>
+        <button class="btn btn-primary btn-full" onclick="doResetOld()" id="btn-resetold">Reset Password</button>
+        <div id="resetold-result" style="margin-top:10px"></div>
       </div>
     </div>
   </div>
@@ -2748,7 +2784,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // ─── BACKEND VERSION CHECK ──────────────────────────────────────────────────
 // Fetches the backend version on page load and displays a small status banner
 // on the Download Provisional Letter page. Helps verify the deployment is current.
-const EXPECTED_BACKEND_VERSION = 'v26.1';
+const EXPECTED_BACKEND_VERSION = 'v26.3';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -4010,11 +4046,12 @@ function nsResetForm() {
 // ══════════════════════════════════════════════════════════
 // ── AUTH FUNCTIONS ──
 function authTab(name) {
-  ['login','register','forgot'].forEach(t=>{
+  // v26.3: Added 'resetold' tab for password reset using old password.
+  ['login','register','forgot','resetold'].forEach(t=>{
     document.getElementById('auth-'+t).classList.toggle('hidden', t!==name);
   });
   document.querySelectorAll('#cs-auth-gate .tab-btn').forEach((b,i)=>{
-    b.classList.toggle('active',['login','register','forgot'][i]===name);
+    b.classList.toggle('active',['login','register','forgot','resetold'][i]===name);
   });
 }
 
@@ -4057,7 +4094,12 @@ async function doLogin() {
     const hint = (attemptsLeft !== '' && attemptsLeft > 0)
       ? ` <span style="font-size:12px;color:var(--warning)">(${attemptsLeft} attempt${attemptsLeft===1?'':'s'} remaining)</span>`
       : '';
-    errEl.innerHTML=(r.error||'Login failed.')+hint;
+    // v26.3: Show a "Reset Password" hint link when login fails
+    const resetHint = `<div style="margin-top:8px;font-size:12px">
+      <span style="color:var(--gray-500)">Forgot your password or having trouble logging in?</span>
+      <button class="btn btn-secondary btn-sm" style="margin-left:6px;font-size:11px" onclick="authTab('resetold')">Reset Password</button>
+    </div>`;
+    errEl.innerHTML=(r.error||'Login failed.')+hint+resetHint;
     errEl.classList.remove('hidden');
   }
 }
@@ -4127,6 +4169,63 @@ async function doReset() {
     document.getElementById('forgot-step2').classList.add('hidden');
   } else {
     errEl.textContent=r.error||'Reset failed.';errEl.classList.remove('hidden');
+  }
+}
+
+// v26.3: Reset password using the OLD password (no email reset code needed).
+// Verifies the old password (handles BOTH plain-text and SHA-256 hashed stored
+// passwords) and stores the new password as plain text.
+async function doResetOld() {
+  const email = (document.getElementById('resetold-email')?.value||"").trim().toLowerCase();
+  const oldPwd = document.getElementById('resetold-old-pwd')?.value || "";
+  const newPwd = document.getElementById('resetold-new-pwd')?.value || "";
+  const cpwd   = document.getElementById('resetold-cpwd')?.value || "";
+  const errEl  = document.getElementById('err-resetold');
+  const resultEl = document.getElementById('resetold-result');
+  const btn    = document.getElementById('btn-resetold');
+  errEl.classList.add('hidden');
+  if(resultEl) resultEl.innerHTML = '';
+
+  if(!email || !oldPwd || !newPwd || !cpwd) {
+    if(errEl) { errEl.textContent = 'All fields are required.'; errEl.classList.remove('hidden'); }
+    return;
+  }
+  if(newPwd !== cpwd) {
+    if(errEl) { errEl.textContent = 'New passwords do not match.'; errEl.classList.remove('hidden'); }
+    return;
+  }
+  if(newPwd.length < 4) {
+    if(errEl) { errEl.textContent = 'New password must be at least 4 characters.'; errEl.classList.remove('hidden'); }
+    return;
+  }
+  if(oldPwd === newPwd) {
+    if(errEl) { errEl.textContent = 'New password must be different from the current password.'; errEl.classList.remove('hidden'); }
+    return;
+  }
+
+  if(btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner spinner-dark"></span> Resetting…'; }
+  try {
+    const r = await callBackend('resetPasswordWithOld', { email, oldPassword: oldPwd, newPassword: newPwd });
+    if(btn) { btn.disabled = false; btn.innerHTML = 'Reset Password'; }
+    if(r && r.success) {
+      toast('✅ Password reset successfully! Please log in with your new password.', 'success');
+      if(resultEl) resultEl.innerHTML = '<div class="alert alert-success" style="font-size:13px">✅ ' + _esc(r.message || 'Password reset successfully.') + '</div>';
+      // Clear the form
+      document.getElementById('resetold-email').value = '';
+      document.getElementById('resetold-old-pwd').value = '';
+      document.getElementById('resetold-new-pwd').value = '';
+      document.getElementById('resetold-cpwd').value = '';
+      // Switch to login tab after 2 seconds
+      setTimeout(() => { authTab('login'); }, 2000);
+    } else {
+      const errMsg = (r && r.error) || 'Failed to reset password.';
+      if(errEl) { errEl.textContent = errMsg; errEl.classList.remove('hidden'); }
+      toast('Failed: ' + errMsg, 'error');
+    }
+  } catch(e) {
+    if(btn) { btn.disabled = false; btn.innerHTML = 'Reset Password'; }
+    if(errEl) { errEl.textContent = 'Error: ' + (e.message || 'Unknown'); errEl.classList.remove('hidden'); }
+    toast('Error: ' + (e.message || 'Unknown'), 'error');
   }
 }
 
