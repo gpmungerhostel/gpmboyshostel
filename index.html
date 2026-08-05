@@ -2787,7 +2787,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // ─── BACKEND VERSION CHECK ──────────────────────────────────────────────────
 // Fetches the backend version on page load and displays a small status banner
 // on the Download Provisional Letter page. Helps verify the deployment is current.
-const EXPECTED_BACKEND_VERSION = 'v26.4';
+const EXPECTED_BACKEND_VERSION = 'v26.5';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -8345,12 +8345,13 @@ async function doApproveStudent(rollFull) {
   };
 
   // Client-side room capacity check (backend also validates)
+  // v26.4: Exclude alumni — their room is considered vacant.
   const roomOccupants = wrStudents.filter(s =>
     s.rollFull !== rollFull &&
     s.hostelInfo &&
     s.hostelInfo.hostel === hostelInfo.hostel &&
     s.hostelInfo.roomNo === hostelInfo.roomNo &&
-    (s.status === 'approved' || s.status === 'alumni')
+    s.status !== 'alumni' // alumni rooms are vacant
   );
   if(roomOccupants.length >= 3) {
     btn.disabled=false; btn.innerHTML='✓ Approve &amp; Issue Allotment Letter';
