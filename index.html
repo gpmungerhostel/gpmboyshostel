@@ -2787,7 +2787,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // ─── BACKEND VERSION CHECK ──────────────────────────────────────────────────
 // Fetches the backend version on page load and displays a small status banner
 // on the Download Provisional Letter page. Helps verify the deployment is current.
-const EXPECTED_BACKEND_VERSION = 'v26.5';
+const EXPECTED_BACKEND_VERSION = 'v27.0';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -12353,7 +12353,7 @@ async function verifyAndDownload() {
       <strong>3.</strong> After registering, <strong>log in</strong> with your email and new password.<br/>
       <strong>4.</strong> Your <strong>Provisional Allotment Letter</strong> will be available to download from your Profile page.
     </div>
-    <button class="btn btn-primary" style="width:100%;font-size:14px;padding:13px;display:block;margin-bottom:12px" onclick="showSection('continuing')">
+    <button class="btn btn-primary" style="width:100%;font-size:14px;padding:13px;display:block;margin-bottom:12px" onclick="showSection('continuing'); authTab('register');">
       🎓 Go to Student Portal &amp; Register
     </button>`;
 
