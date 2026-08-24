@@ -2131,33 +2131,47 @@
         <!-- Student preview + edit form (populated after search) -->
         <div id="wr-edit-form-container"></div>
 
-        <!-- v30.0: Delete Student (master-key secured) -->
+        <!-- v30.1: Delete Student — search + verify first, then delete (master-key secured) -->
         <hr style="border:none;border-top:1px solid var(--gray-100);margin:24px 0 16px"/>
         <div class="section-heading" style="font-size:14px;color:var(--danger)">🗑 Delete Student Record</div>
         <div class="alert alert-danger" style="font-size:12px;margin:8px 0 12px">
-          ⚠ <strong>PERMANENT deletion.</strong> This removes the student from ALL sheets (Students, Users, Images, Leaves, Grievances, Messages) and trashes their Drive folder. This cannot be undone. Requires the master key.
+          ⚠ <strong>PERMANENT deletion.</strong> Search for the student first to verify their identity, then enter the master key to delete. This removes the student from ALL sheets and trashes their Drive folder. This cannot be undone.
         </div>
+        <!-- Step 1: Search student -->
         <div class="field">
-          <label>Student Roll Number to Delete <span class="req">*</span></label>
-          <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px">
-            <input type="text" id="wr-del-roll-no" maxlength="3" placeholder="25" inputmode="text" autocomplete="off"
-                   oninput="_sanitizeEnglishInput(this)" style="text-align:center;font-weight:600"/>
-            <select id="wr-del-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
-              <option>CE</option><option selected>CSE</option><option>EE</option>
-              <option>EC</option><option>FTS</option><option>ME</option>
-            </select>
-            <input type="text" id="wr-del-roll-year" maxlength="4" placeholder="2026" inputmode="text" autocomplete="off"
-                   oninput="_sanitizeEnglishInput(this)" style="text-align:center;font-weight:600"/>
+          <label>Student Roll Number <span class="req">*</span></label>
+          <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+            <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px">
+              <input type="text" id="wr-del-roll-no" maxlength="3" placeholder="25" inputmode="text" autocomplete="off"
+                     oninput="_sanitizeEnglishInput(this)"
+                     onkeydown="if(event.key==='Enter'){event.preventDefault();_wrDeleteSearchStudent();}"
+                     style="text-align:center;font-weight:600"/>
+              <select id="wr-del-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
+                <option>CE</option><option selected>CSE</option><option>EE</option>
+                <option>EC</option><option>FTS</option><option>ME</option>
+              </select>
+              <input type="text" id="wr-del-roll-year" maxlength="4" placeholder="2026" inputmode="text" autocomplete="off"
+                     oninput="_sanitizeEnglishInput(this)"
+                     onkeydown="if(event.key==='Enter'){event.preventDefault();_wrDeleteSearchStudent();}"
+                     style="text-align:center;font-weight:600"/>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="_wrDeleteSearchStudent()" id="wr-del-search-btn" style="white-space:nowrap">🔍 Search Student</button>
           </div>
+          <div class="err-msg hidden" id="err-wr-del-roll"></div>
         </div>
-        <div class="field">
-          <label>Master Key <span class="req">*</span></label>
-          <div style="position:relative">
-            <input type="password" id="wr-del-masterkey" placeholder="Enter master key" style="padding-right:40px"/>
-            <button type="button" onclick="togglePwd('wr-del-masterkey','eye-wr-del')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;z-index:2;font-size:18px" id="eye-wr-del">👁</button>
+        <!-- Step 2: Student preview (shown after search) -->
+        <div id="wr-del-preview" style="margin-bottom:16px"></div>
+        <!-- Step 3: Master key + delete button (shown after search confirms student) -->
+        <div id="wr-del-confirm-section" class="hidden">
+          <div class="field">
+            <label>Master Key <span class="req">*</span></label>
+            <div style="position:relative">
+              <input type="password" id="wr-del-masterkey" placeholder="Enter master key" style="padding-right:40px"/>
+              <button type="button" onclick="togglePwd('wr-del-masterkey','eye-wr-del')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;z-index:2;font-size:18px" id="eye-wr-del">👁</button>
+            </div>
           </div>
+          <button class="btn btn-danger" onclick="_wrDeleteStudent()" id="wr-del-btn">🗑 Delete Student Permanently</button>
         </div>
-        <button class="btn btn-danger" onclick="_wrDeleteStudent()" id="wr-del-btn" style="margin-top:6px">🗑 Delete Student Permanently</button>
         <div id="wr-del-result" style="margin-top:12px"></div>
       </div>
 
@@ -2844,7 +2858,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // ─── BACKEND VERSION CHECK ──────────────────────────────────────────────────
 // Fetches the backend version on page load and displays a small status banner
 // on the Download Provisional Letter page. Helps verify the deployment is current.
-const EXPECTED_BACKEND_VERSION = 'v30.0';
+const EXPECTED_BACKEND_VERSION = 'v30.1';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -6737,26 +6751,113 @@ function wardenLogout() {
 }
 
 
-// v30.0: Warden delete student permanently (master-key secured)
-async function _wrDeleteStudent() {
+// v30.1: Warden delete student — search + verify first, then delete (master-key secured)
+let _wrDeleteTargetRoll = null;
+let _wrDeleteStudentPhoto = null;
+
+async function _wrDeleteSearchStudent() {
   const dno  = (document.getElementById('wr-del-roll-no')?.value||'').trim();
   const dbr  = document.getElementById('wr-del-roll-branch')?.value||'';
   const dyr  = (document.getElementById('wr-del-roll-year')?.value||'').trim();
   const rollFull = dno && dbr && dyr ? dno + '/' + dbr + '/' + dyr : '';
+  const previewEl = document.getElementById('wr-del-preview');
+  const confirmEl = document.getElementById('wr-del-confirm-section');
+  const resultEl = document.getElementById('wr-del-result');
+  const searchBtn = document.getElementById('wr-del-search-btn');
+
+  if(!rollFull) {
+    if(previewEl) previewEl.innerHTML = '<div class="alert alert-warning" style="font-size:12.5px">⚠ Please enter all three roll number fields.</div>';
+    if(confirmEl) confirmEl.classList.add('hidden');
+    _wrDeleteTargetRoll = null;
+    return;
+  }
+
+  if(searchBtn) { searchBtn.disabled = true; searchBtn.innerHTML = '<span class="spinner spinner-dark"></span> Searching…'; }
+  if(resultEl) resultEl.innerHTML = '';
+  _wrDeleteTargetRoll = null;
+  _wrDeleteStudentPhoto = null;
+
+  try {
+    const r = await callBackend('getStudent', { rollFull });
+    if(searchBtn) { searchBtn.disabled = false; searchBtn.innerHTML = '🔍 Search Student'; }
+
+    if(!r || !r.success || !r.student) {
+      _wrDeleteTargetRoll = null;
+      if(previewEl) previewEl.innerHTML = `<div class="alert alert-danger" style="font-size:12.5px">❌ No student found with roll number <strong>${rollFull}</strong>.</div>`;
+      if(confirmEl) confirmEl.classList.add('hidden');
+      return;
+    }
+
+    _wrDeleteTargetRoll = r.student.rollFull;
+    const s = r.student;
+    const hi = s.hostelInfo || {};
+    const roomStr = hi.hostel ? `${hi.hostel} · Room ${hi.roomNo||'—'} · Bed ${hi.bedNo||'—'}` : 'Not allotted';
+
+    // Render preview card (same style as edit student preview)
+    if(previewEl) previewEl.innerHTML = `
+      <div style="border:1.5px solid var(--danger);border-radius:var(--radius-md);padding:14px;background:#fff5f5">
+        <div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">⚠ Student Found — Verify Before Deleting</div>
+        <div style="display:flex;gap:14px;align-items:flex-start">
+          <div style="flex-shrink:0">
+            <img id="wr-del-preview-photo" src="" style="width:72px;height:88px;object-fit:cover;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);display:none"/>
+            <div id="wr-del-preview-photo-ph" style="width:72px;height:88px;border:1.5px dashed var(--gray-200);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:11px;text-align:center">No<br>Photo</div>
+          </div>
+          <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:13px">
+            <div><span style="color:var(--gray-500);font-size:11px;text-transform:uppercase;letter-spacing:.3px">Name</span><br/><strong style="color:var(--navy)">${_esc(s.name||'—')}</strong></div>
+            <div><span style="color:var(--gray-500);font-size:11px;text-transform:uppercase;letter-spacing:.3px">Roll No.</span><br/><strong>${_esc(s.rollFull||'—')}</strong></div>
+            <div><span style="color:var(--gray-500);font-size:11px;text-transform:uppercase;letter-spacing:.3px">Status</span><br/><span class="badge badge-${s.status||'pending'}">${s.status||'—'}</span></div>
+            <div><span style="color:var(--gray-500);font-size:11px;text-transform:uppercase;letter-spacing:.3px">Contact</span><br/><strong>${_esc(s.contactNo||'—')}</strong></div>
+            <div><span style="color:var(--gray-500);font-size:11px;text-transform:uppercase;letter-spacing:.3px">Email</span><br/><strong style="word-break:break-all">${_esc(s.email||'—')}</strong></div>
+            <div><span style="color:var(--gray-500);font-size:11px;text-transform:uppercase;letter-spacing:.3px">Hostel / Room</span><br/><strong>${_esc(roomStr)}</strong></div>
+            <div style="grid-column:1/-1"><span style="color:var(--gray-500);font-size:11px;text-transform:uppercase;letter-spacing:.3px">Guardian</span><br/><strong>${_esc(s.guardianName||'—')} (${_esc(s.guardianContact||'—')})</strong></div>
+            <div style="grid-column:1/-1"><span style="color:var(--gray-500);font-size:11px;text-transform:uppercase;letter-spacing:.3px">Admission Session</span><br/><strong>${_esc(s.admissionSession||s.semesterNo||'—')}</strong></div>
+          </div>
+        </div>
+      </div>`;
+
+    // Show the master key + delete button
+    if(confirmEl) confirmEl.classList.remove('hidden');
+
+    // Fetch photo in background
+    _wrDeleteStudentPhoto = null;
+    callBackend('getProfileImages', { rollFull: s.rollFull }).then(pr => {
+      if(pr && pr.success && pr.photo) {
+        _wrDeleteStudentPhoto = pr.photo;
+        const photoImg = document.getElementById('wr-del-preview-photo');
+        if(photoImg) {
+          photoImg.src = 'data:image/jpeg;base64,' + pr.photo;
+          photoImg.style.display = 'block';
+          const ph = document.getElementById('wr-del-preview-photo-ph');
+          if(ph) ph.style.display = 'none';
+        }
+      }
+    }).catch(()=>{});
+  } catch(e) {
+    if(searchBtn) { searchBtn.disabled = false; searchBtn.innerHTML = '🔍 Search Student'; }
+    _wrDeleteTargetRoll = null;
+    if(previewEl) previewEl.innerHTML = `<div class="alert alert-danger" style="font-size:12.5px">⚠ Error: ${e.message || 'Unknown error'}</div>`;
+    if(confirmEl) confirmEl.classList.add('hidden');
+  }
+}
+
+async function _wrDeleteStudent() {
   const masterKey = document.getElementById('wr-del-masterkey')?.value || '';
   const resultEl = document.getElementById('wr-del-result');
   const btn = document.getElementById('wr-del-btn');
+  const confirmEl = document.getElementById('wr-del-confirm-section');
 
-  if(!rollFull) {
-    if(resultEl) resultEl.innerHTML = '<div class="alert alert-warning" style="font-size:12.5px">⚠ Please enter all three roll number fields.</div>';
+  if(!_wrDeleteTargetRoll) {
+    if(resultEl) resultEl.innerHTML = '<div class="alert alert-warning" style="font-size:12.5px">⚠ Please search for a student first to verify their identity.</div>';
     return;
   }
   if(!masterKey) {
     if(resultEl) resultEl.innerHTML = '<div class="alert alert-warning" style="font-size:12.5px">⚠ Please enter the master key.</div>';
     return;
   }
+
+  const rollFull = _wrDeleteTargetRoll;
   if(!confirm('⚠ PERMANENT DELETION\n\nYou are about to permanently delete student ' + rollFull + '.\n\nThis will remove ALL their data:\n  • Student record\n  • Login account\n  • Photos & signatures\n  • All leave applications\n  • All grievances\n  • All messages\n  • Drive folder (all PDFs)\n\nThis CANNOT be undone.\n\nProceed?')) return;
-  if(!confirm('Are you absolutely sure? This is your FINAL confirmation. Type the roll number mentally and confirm.')) return;
+  if(!confirm('Are you absolutely sure? This is your FINAL confirmation. The student ' + rollFull + ' will be permanently deleted.')) return;
 
   if(btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner spinner-dark"></span> Deleting...'; }
   if(resultEl) resultEl.innerHTML = '<div style="padding:14px;color:var(--gray-500);font-size:13px"><span class="spinner spinner-dark"></span> Permanently deleting student ' + rollFull + '...</div>';
@@ -6767,10 +6868,14 @@ async function _wrDeleteStudent() {
     if(r && r.success) {
       toast('✅ Student deleted permanently.', 'success');
       if(resultEl) resultEl.innerHTML = '<div class="alert alert-success" style="font-size:12.5px">✅ ' + r.message + '</div>';
-      // Clear the form
+      // Clear everything
       document.getElementById('wr-del-roll-no').value = '';
       document.getElementById('wr-del-roll-year').value = '';
       document.getElementById('wr-del-masterkey').value = '';
+      _wrDeleteTargetRoll = null;
+      const previewEl = document.getElementById('wr-del-preview');
+      if(previewEl) previewEl.innerHTML = '';
+      if(confirmEl) confirmEl.classList.add('hidden');
       // Refresh warden data
       loadWardenData(true);
     } else {
