@@ -579,7 +579,7 @@
       <div style="font-size:40px;margin-bottom:6px">📥</div>
       <div class="card-title" style="margin:0">Download Provisional Allotment Letter</div>
       <div style="font-size:13px;color:var(--gray-600);margin-top:5px">
-        Verify your identity with your registered Email and Access Key.<br/>
+        Verify your identity with your <strong>Roll Number, Email, and Guardian's Mobile Number</strong>.<br/>
         <strong>If your letter is issued:</strong> you'll be guided to register on the Student Portal to download it.<br/>
         <strong>If your application was rejected:</strong> you'll get an option to edit and re-submit.
       </div>
@@ -588,27 +588,37 @@
     <!-- Step 1: verify credentials -->
     <div id="dl-step-verify">
       <div class="field">
+        <label>Roll Number <span class="req">*</span></label>
+        <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px">
+          <input type="text" id="dl-roll-no" maxlength="3" placeholder="25" inputmode="text" autocomplete="off"
+                 oninput="_sanitizeEnglishInput(this)" style="text-align:center;font-weight:600"/>
+          <select id="dl-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
+            <option>CE</option><option selected>CSE</option><option>EE</option>
+            <option>EC</option><option>FTS</option><option>ME</option>
+          </select>
+          <input type="text" id="dl-roll-year" maxlength="4" placeholder="2026" inputmode="text" autocomplete="off"
+                 oninput="_sanitizeEnglishInput(this)" style="text-align:center;font-weight:600"/>
+        </div>
+        <div class="err-msg hidden" id="err-dl-roll"></div>
+      </div>
+      <div class="field">
         <label>Registered Email <span class="req">*</span></label>
         <input type="email" id="dl-email" placeholder="e.g. student@college.edu"
           autocomplete="off"/>
         <div class="err-msg hidden" id="err-dl-email"></div>
       </div>
       <div class="field">
-        <label>Access Key <span class="req">*</span></label>
-        <div style="position:relative">
-          <input type="password" id="dl-access-key" placeholder="Your personal Access Key"
-            autocomplete="off" style="padding-right:44px"/>
-          <button type="button" onclick="togglePwd('dl-access-key','dl-key-eye')"
-            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--gray-600);padding:4px;z-index:2" id="dl-key-eye">👁</button>
-        </div>
-        <div class="err-msg hidden" id="err-dl-access-key"></div>
+        <label>Guardian's Mobile Number <span class="req">*</span></label>
+        <input type="text" id="dl-guardian-mobile" placeholder="e.g. 9876543210" maxlength="10"
+          autocomplete="off"/>
+        <div class="err-msg hidden" id="err-dl-guardian-mobile"></div>
       </div>
       <div class="err-msg hidden" id="err-dl-verify" style="margin-bottom:12px"></div>
       <button class="btn btn-primary" style="width:100%" onclick="verifyAndDownload()" id="dl-verify-btn">
         🔍 Verify &amp; Get Letter
       </button>
       <div style="margin-top:14px;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-md);font-size:12px;color:var(--gray-600)">
-        <strong>Application rejected?</strong> Enter your registered Email + Access Key above to see the rejection reason and edit your application.<br/>
+        <strong>Application rejected?</strong> Enter your Roll Number, Email, and Guardian's Mobile above to see the rejection reason and edit your application.<br/>
         <strong>Letter already issued?</strong> You'll be asked to register on the Student Portal to download your letter.
       </div>
     </div>
@@ -1557,6 +1567,24 @@
         <!-- Global save result for legacy compat -->
         <div id="dw-save-result" style="margin-top:4px"></div>
 
+        <!-- v29.0: One-time Fix All Drive Sharing -->
+        <hr style="border:none;border-top:1px solid var(--gray-100);margin:24px 0 16px"/>
+        <div class="section-heading" style="font-size:14px;color:var(--danger)">🔧 Fix All Drive Sharing (One-Time Tool)</div>
+        <div class="alert alert-warning" style="font-size:12px;margin:8px 0 12px">
+          This one-time tool fixes the "Drive permission" error for ALL existing student PDFs (provisional letters, allotment letters, no dues certificates, HDNs, and leave approval letters).
+          It sets sharing to "Anyone with link — View" on every PDF file in Drive, and cleans all stored URLs.
+          <strong>Run this once after deploying v29.0.</strong> Requires the master key.
+        </div>
+        <div class="field">
+          <label>Master Key <span class="req">*</span></label>
+          <div style="position:relative">
+            <input type="password" id="wr-fixsharing-masterkey" placeholder="Enter master key" style="padding-right:40px;max-width:300px"/>
+            <button type="button" onclick="togglePwd('wr-fixsharing-masterkey','eye-wr-fixsharing')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;z-index:2;font-size:18px" id="eye-wr-fixsharing">👁</button>
+          </div>
+        </div>
+        <button class="btn btn-danger" onclick="_wrFixAllDriveSharing()" id="wr-fixsharing-btn" style="margin-top:6px">🔧 Fix All Drive Sharing Now</button>
+        <div id="wr-fixsharing-result" style="margin-top:12px"></div>
+
       </div><!-- end wr-tab-datesettings -->
 
       <!-- ══════════════════════════════════════════════════════════════════
@@ -2102,6 +2130,35 @@
 
         <!-- Student preview + edit form (populated after search) -->
         <div id="wr-edit-form-container"></div>
+
+        <!-- v30.0: Delete Student (master-key secured) -->
+        <hr style="border:none;border-top:1px solid var(--gray-100);margin:24px 0 16px"/>
+        <div class="section-heading" style="font-size:14px;color:var(--danger)">🗑 Delete Student Record</div>
+        <div class="alert alert-danger" style="font-size:12px;margin:8px 0 12px">
+          ⚠ <strong>PERMANENT deletion.</strong> This removes the student from ALL sheets (Students, Users, Images, Leaves, Grievances, Messages) and trashes their Drive folder. This cannot be undone. Requires the master key.
+        </div>
+        <div class="field">
+          <label>Student Roll Number to Delete <span class="req">*</span></label>
+          <div style="display:grid;grid-template-columns:64px 90px 84px;gap:8px">
+            <input type="text" id="wr-del-roll-no" maxlength="3" placeholder="25" inputmode="text" autocomplete="off"
+                   oninput="_sanitizeEnglishInput(this)" style="text-align:center;font-weight:600"/>
+            <select id="wr-del-roll-branch" style="width:100%;padding:10px 8px;font-weight:600;text-align:center">
+              <option>CE</option><option selected>CSE</option><option>EE</option>
+              <option>EC</option><option>FTS</option><option>ME</option>
+            </select>
+            <input type="text" id="wr-del-roll-year" maxlength="4" placeholder="2026" inputmode="text" autocomplete="off"
+                   oninput="_sanitizeEnglishInput(this)" style="text-align:center;font-weight:600"/>
+          </div>
+        </div>
+        <div class="field">
+          <label>Master Key <span class="req">*</span></label>
+          <div style="position:relative">
+            <input type="password" id="wr-del-masterkey" placeholder="Enter master key" style="padding-right:40px"/>
+            <button type="button" onclick="togglePwd('wr-del-masterkey','eye-wr-del')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;z-index:2;font-size:18px" id="eye-wr-del">👁</button>
+          </div>
+        </div>
+        <button class="btn btn-danger" onclick="_wrDeleteStudent()" id="wr-del-btn" style="margin-top:6px">🗑 Delete Student Permanently</button>
+        <div id="wr-del-result" style="margin-top:12px"></div>
       </div>
 
 
@@ -2787,7 +2844,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // ─── BACKEND VERSION CHECK ──────────────────────────────────────────────────
 // Fetches the backend version on page load and displays a small status banner
 // on the Download Provisional Letter page. Helps verify the deployment is current.
-const EXPECTED_BACKEND_VERSION = 'v28.1';
+const EXPECTED_BACKEND_VERSION = 'v30.0';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -6677,6 +6734,99 @@ function wardenLogout() {
   document.getElementById('wr-pass').value='';
   wrStudents=[];
   wrDataLoaded=false;
+}
+
+
+// v30.0: Warden delete student permanently (master-key secured)
+async function _wrDeleteStudent() {
+  const dno  = (document.getElementById('wr-del-roll-no')?.value||'').trim();
+  const dbr  = document.getElementById('wr-del-roll-branch')?.value||'';
+  const dyr  = (document.getElementById('wr-del-roll-year')?.value||'').trim();
+  const rollFull = dno && dbr && dyr ? dno + '/' + dbr + '/' + dyr : '';
+  const masterKey = document.getElementById('wr-del-masterkey')?.value || '';
+  const resultEl = document.getElementById('wr-del-result');
+  const btn = document.getElementById('wr-del-btn');
+
+  if(!rollFull) {
+    if(resultEl) resultEl.innerHTML = '<div class="alert alert-warning" style="font-size:12.5px">⚠ Please enter all three roll number fields.</div>';
+    return;
+  }
+  if(!masterKey) {
+    if(resultEl) resultEl.innerHTML = '<div class="alert alert-warning" style="font-size:12.5px">⚠ Please enter the master key.</div>';
+    return;
+  }
+  if(!confirm('⚠ PERMANENT DELETION\n\nYou are about to permanently delete student ' + rollFull + '.\n\nThis will remove ALL their data:\n  • Student record\n  • Login account\n  • Photos & signatures\n  • All leave applications\n  • All grievances\n  • All messages\n  • Drive folder (all PDFs)\n\nThis CANNOT be undone.\n\nProceed?')) return;
+  if(!confirm('Are you absolutely sure? This is your FINAL confirmation. Type the roll number mentally and confirm.')) return;
+
+  if(btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner spinner-dark"></span> Deleting...'; }
+  if(resultEl) resultEl.innerHTML = '<div style="padding:14px;color:var(--gray-500);font-size:13px"><span class="spinner spinner-dark"></span> Permanently deleting student ' + rollFull + '...</div>';
+
+  try {
+    const r = await callBackend('wardenDeleteStudent', { rollFull, masterKey });
+    if(btn) { btn.disabled = false; btn.innerHTML = '🗑 Delete Student Permanently'; }
+    if(r && r.success) {
+      toast('✅ Student deleted permanently.', 'success');
+      if(resultEl) resultEl.innerHTML = '<div class="alert alert-success" style="font-size:12.5px">✅ ' + r.message + '</div>';
+      // Clear the form
+      document.getElementById('wr-del-roll-no').value = '';
+      document.getElementById('wr-del-roll-year').value = '';
+      document.getElementById('wr-del-masterkey').value = '';
+      // Refresh warden data
+      loadWardenData(true);
+    } else {
+      const errMsg = (r && r.error) || 'Failed to delete student.';
+      toast('Failed: ' + errMsg, 'error');
+      if(resultEl) resultEl.innerHTML = '<div class="alert alert-danger" style="font-size:12.5px">⚠ ' + errMsg + '</div>';
+    }
+  } catch(e) {
+    if(btn) { btn.disabled = false; btn.innerHTML = '🗑 Delete Student Permanently'; }
+    toast('Error: ' + (e.message || 'Unknown'), 'error');
+    if(resultEl) resultEl.innerHTML = '<div class="alert alert-danger" style="font-size:12.5px">⚠ Error: ' + (e.message || 'Unknown') + '</div>';
+  }
+}
+
+// v29.0: One-time Fix All Drive Sharing
+async function _wrFixAllDriveSharing() {
+  const masterKey = document.getElementById('wr-fixsharing-masterkey')?.value || '';
+  const resultEl = document.getElementById('wr-fixsharing-result');
+  const btn = document.getElementById('wr-fixsharing-btn');
+  if(!masterKey) {
+    if(resultEl) resultEl.innerHTML = '<div class="alert alert-warning" style="font-size:12.5px">⚠ Please enter the master key.</div>';
+    return;
+  }
+  if(!confirm('This will fix Drive sharing on ALL existing student PDFs (provisional letters, allotment letters, no dues, HDNs, leave letters).\n\nIt may take a few seconds for large datasets.\n\nProceed?')) return;
+  if(btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner spinner-dark"></span> Fixing...'; }
+  if(resultEl) resultEl.innerHTML = '<div style="padding:14px;color:var(--gray-500);font-size:13px"><span class="spinner spinner-dark"></span> Scanning all student documents and fixing Drive sharing... This may take a minute.</div>';
+  try {
+    const r = await callBackend('fixAllDriveSharing', { masterKey });
+    if(btn) { btn.disabled = false; btn.innerHTML = '🔧 Fix All Drive Sharing Now'; }
+    if(r && r.success) {
+      toast('✅ Drive sharing fixed for ' + r.fixed + ' file(s)!', 'success');
+      let html = `<div class="alert alert-success" style="font-size:12.5px">
+        ✅ <strong>${r.message}</strong><br/><br/>
+        <small>Files fixed: <strong>${r.fixed}</strong> | Failed: <strong>${r.failed}</strong> | Skipped: ${r.skipped}<br/>
+        Student records updated: ${r.studentsUpdated} | Leave records updated: ${r.leavesUpdated}</small>
+      </div>`;
+      if(r.errors && r.errors.length) {
+        html += '<div style="margin-top:10px;font-size:12px;color:var(--gray-600)">Failed files (may be deleted or inaccessible):</div>';
+        html += '<div style="margin-top:6px;max-height:150px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:8px">';
+        r.errors.slice(0, 30).forEach(e => {
+          html += `<div style="font-size:11px;padding:3px 0;border-bottom:1px solid var(--gray-100)">Row ${e.row} · ${e.key} · ${e.error}</div>`;
+        });
+        if(r.errors.length > 30) html += `<div style="font-size:11px;padding:3px 0;color:var(--gray-500)">… and ${r.errors.length - 30} more</div>`;
+        html += '</div>';
+      }
+      if(resultEl) resultEl.innerHTML = html;
+    } else {
+      const errMsg = (r && r.error) || 'Failed to fix Drive sharing.';
+      toast('Failed: ' + errMsg, 'error');
+      if(resultEl) resultEl.innerHTML = `<div class="alert alert-danger" style="font-size:12.5px">⚠ ${errMsg}</div>`;
+    }
+  } catch(e) {
+    if(btn) { btn.disabled = false; btn.innerHTML = '🔧 Fix All Drive Sharing Now'; }
+    toast('Error: ' + (e.message || 'Unknown'), 'error');
+    if(resultEl) resultEl.innerHTML = `<div class="alert alert-danger" style="font-size:12.5px">⚠ Error: ${e.message || 'Unknown'}</div>`;
+  }
 }
 
 // ── WARDEN REFRESH ALL ──────────────────────────────────────────────────────
@@ -12248,11 +12398,16 @@ document.addEventListener('keydown', (e) => {
 function dlReset() {
   // Clear form and hide result
   const emailEl = document.getElementById('dl-email');
-  const keyEl   = document.getElementById('dl-access-key');
   if(emailEl) emailEl.value = '';
-  if(keyEl)   keyEl.value   = '';
+  const rollNoEl = document.getElementById('dl-roll-no');
+  const rollYrEl = document.getElementById('dl-roll-year');
+  if(rollNoEl) rollNoEl.value = '';
+  if(rollYrEl) rollYrEl.value = '';
+  const gMobileEl = document.getElementById('dl-guardian-mobile');
+  if(gMobileEl) gMobileEl.value = '';
   clearErr('dl-email');
-  clearErr('dl-access-key');
+  clearErr('dl-roll');
+  clearErr('dl-guardian-mobile');
   clearErr('dl-verify');
   const verify = document.getElementById('dl-step-verify');
   const result = document.getElementById('dl-step-result');
@@ -12261,21 +12416,28 @@ function dlReset() {
 }
 
 async function verifyAndDownload() {
-  clearErr('dl-email'); clearErr('dl-access-key'); clearErr('dl-verify');
+  clearErr('dl-email'); clearErr('dl-roll'); clearErr('dl-guardian-mobile'); clearErr('dl-verify');
 
+  // v30.0: Use roll number + email + guardian mobile (no access key)
+  const dno  = (document.getElementById('dl-roll-no')?.value||'').trim();
+  const dbr  = document.getElementById('dl-roll-branch')?.value||'';
+  const dyr  = (document.getElementById('dl-roll-year')?.value||'').trim();
+  const rollFull = dno && dbr && dyr ? dno + '/' + dbr + '/' + dyr : '';
   const email = (document.getElementById('dl-email')?.value || '').trim().toLowerCase();
-  const key   = (document.getElementById('dl-access-key')?.value || '').trim();
+  const gMobile = (document.getElementById('dl-guardian-mobile')?.value || '').trim();
+
   let ok = true;
+  if(!rollFull) { showErr('dl-roll','Roll number is required (all 3 fields)'); ok=false; }
   if(!email) { showErr('dl-email','Email is required'); ok=false; }
   else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('dl-email','Enter a valid email address'); ok=false; }
-  if(!key)   { showErr('dl-access-key','Access Key is required'); ok=false; }
+  if(!gMobile) { showErr('dl-guardian-mobile','Guardian mobile number is required'); ok=false; }
   if(!ok) return;
 
   const btn = document.getElementById('dl-verify-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Verifying…';
 
-  const r = await callBackend('getProvisionalLetter', { email: email, accessKey: key });
+  const r = await callBackend('getProvisionalLetterByRoll', { rollFull: rollFull, email: email, guardianMobile: gMobile });
 
   btn.disabled = false;
   btn.innerHTML = '🔍 Verify &amp; Get Letter';
