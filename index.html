@@ -2871,7 +2871,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // ─── BACKEND VERSION CHECK ──────────────────────────────────────────────────
 // Fetches the backend version on page load and displays a small status banner
 // on the Download Provisional Letter page. Helps verify the deployment is current.
-const EXPECTED_BACKEND_VERSION = 'v34.0';
+const EXPECTED_BACKEND_VERSION = 'v36.0';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -6937,21 +6937,21 @@ async function _wrFixAllDriveSharing() {
     const r = await callBackend('fixAllDriveSharing', { masterKey });
     if(btn) { btn.disabled = false; btn.innerHTML = '🔧 Fix All Drive Sharing Now'; }
     if(r && r.success) {
-      toast('✅ Drive sharing processed for ' + r.fixed + ' file(s)!', 'success');
+      toast('✅ Sharing complete!', 'success');
       let html = `<div class="alert alert-success" style="font-size:12.5px">
         ✅ <strong>${r.message}</strong>
       </div>`;
 
-      // v33.4: Summary stats
+      // v36.0: Summary stats
       html += `<div style="margin-top:10px;display:flex;gap:12px;flex-wrap:wrap">
         <div style="padding:8px 14px;background:var(--success-bg);border:1px solid var(--success);border-radius:6px;font-size:12px">
-          ✅ Shared OK: <strong>${r.sharedOk || 0}</strong>
+          ✅ Newly shared: <strong>${r.sharedOk || 0}</strong>
+        </div>
+        <div style="padding:8px 14px;background:#e8f5e9;border:1px solid #81c784;border-radius:6px;font-size:12px">
+          ⏭ Already shared (skipped): <strong>${r.alreadyShared || 0}</strong>
         </div>
         <div style="padding:8px 14px;background:var(--danger-bg);border:1px solid var(--danger);border-radius:6px;font-size:12px">
-          ❌ Share FAILED: <strong>${r.shareFailed || 0}</strong>
-        </div>
-        <div style="padding:8px 14px;background:#fff3e0;border:1px solid var(--warning);border-radius:6px;font-size:12px">
-          🔓 Public removed: <strong>${r.publicRemoved || 0}</strong>
+          ❌ Failed: <strong>${r.shareFailed || 0}</strong>
         </div>
       </div>`;
 
