@@ -2941,7 +2941,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // ─── BACKEND VERSION CHECK ──────────────────────────────────────────────────
 // Fetches the backend version on page load and displays a small status banner
 // on the Download Provisional Letter page. Helps verify the deployment is current.
-const EXPECTED_BACKEND_VERSION = 'v37.4';
+const EXPECTED_BACKEND_VERSION = 'v37.5';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -3566,6 +3566,17 @@ async function _wardenRegenNoDuesClientSide(rollFull) {
 // All PDF generation/regeneration is now strictly warden-side.
 
 
+// ══════════════════════════════════════════════════════════
+// BACKEND CALL
+// ══════════════════════════════════════════════════════════
+// v37.5: BUG FIX — the `const _inflightRequests = new Map();` line that
+// existed in v36.8 (line 3230) was accidentally DROPPED in v37.0 when I
+// inserted the PDF helper functions before callBackend. Without this
+// line, every callBackend() call threw "ReferenceError: _inflightRequests
+// is not defined" the moment it hit line 3584 (`if(useDedup && _inflightRequests.has(key))`).
+// This broke warden login, student login, admin login, AND every read/write
+// operation in the entire app. Restored the missing line.
+const _inflightRequests = new Map();
 
 async function callBackend(action, data={}) {
   if(GAS_URL.includes("YOUR_SCRIPT_ID")) {
@@ -11677,15 +11688,24 @@ async function adminLogin() {
   }
   const btn = document.querySelector('#adm-login .btn-primary');
   if(btn) { btn.disabled=true; btn.innerHTML='<span class="spinner spinner-dark"></span> Verifying…'; }
-  const r = await callBackend('adminLogin', {adminId:id, adminPass:pass});
+  // v37.5: Same try/catch + always-re-enable pattern as wardenLogin + doLogin.
+  let r;
+  try {
+    r = await callBackend('adminLogin', {adminId:id, adminPass:pass});
+  } catch(e) {
+    if(btn) { btn.disabled=false; btn.textContent='Login to Admin Portal'; }
+    errEl.textContent = 'Login failed: ' + (e.message || 'unknown error') + '. Please check your internet connection and try again.';
+    errEl.classList.remove('hidden');
+    return;
+  }
   if(btn) { btn.disabled=false; btn.textContent='Login to Admin Portal'; }
-  if(r.success) {
+  if(r && r.success) {
     errEl.classList.add('hidden');
     document.getElementById('adm-login').classList.add('hidden');
     document.getElementById('adm-dashboard').classList.remove('hidden');
     admLoadData();
   } else {
-    errEl.textContent = r.error || 'Invalid Admin ID or password.';
+    errEl.textContent = (r && r.error) ? r.error : 'Invalid Admin ID or password.';
     errEl.classList.remove('hidden');
   }
 }
