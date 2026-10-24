@@ -2941,7 +2941,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // ─── BACKEND VERSION CHECK ──────────────────────────────────────────────────
 // Fetches the backend version on page load and displays a small status banner
 // on the Download Provisional Letter page. Helps verify the deployment is current.
-const EXPECTED_BACKEND_VERSION = 'v37.5';
+const EXPECTED_BACKEND_VERSION = 'v37.6';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -4305,138 +4305,164 @@ let _editingRejectedRollFull  = null;
 let _editingFromPublicPage    = false;  // true when editing from the download page (not logged in)
 
 function editRejectedAdmission() {
-  if(!csStudent) { toast('No student record loaded.', 'error'); return; }
-  if(csStudent.status !== 'rejected') {
-    toast('Only rejected applications can be edited.', 'error');
-    return;
-  }
+  // v37.6: Wrapped in try/catch so that if ANYTHING throws (missing DOM element,
+  // stale csStudent data, etc.), the student sees a clear error toast instead
+  // of "nothing happens when clicked". The previous version had no error
+  // handling — if any line threw, the function silently died and the student
+  // saw nothing change on screen.
+  try {
+    if(!csStudent) { toast('No student record loaded.', 'error'); return; }
+    if(csStudent.status !== 'rejected') {
+      toast('Only rejected applications can be edited. Current status: ' + (csStudent.status || 'unknown'), 'error');
+      console.warn('editRejectedAdmission: status is "' + csStudent.status + '" (expected "rejected")');
+      return;
+    }
 
-  // Set the edit-mode flags so nsValidate / nsSubmit know to behave accordingly
-  _editingRejectedAdmission = true;
-  _editingRejectedRollFull  = csStudent.rollFull;
+    // Set the edit-mode flags so nsValidate / nsSubmit know to behave accordingly
+    _editingRejectedAdmission = true;
+    _editingRejectedRollFull  = csStudent.rollFull;
 
-  // Determine if we're editing from the public download page (not logged in)
-  // or from the logged-in student portal. This affects where the student is
-  // redirected after a successful re-submission.
-  // If the student is on the download-letter page, they're not logged in
-  // (rejected students can't register). Otherwise, they're logged in.
-  _editingFromPublicPage = (currentSection === 'download-letter');
+    // Determine if we're editing from the public download page (not logged in)
+    // or from the logged-in student portal. This affects where the student is
+    // redirected after a successful re-submission.
+    _editingFromPublicPage = (currentSection === 'download-letter');
 
-  // Reset upload state so we don't accidentally reuse a previous session's files
-  delete uploadedB64['photo'];
-  delete uploadedB64['sig'];
-  delete uploadedFiles['photo'];
-  delete uploadedFiles['sig'];
-  if(uploadedUrls) {
-    if(uploadedUrls['photo']) URL.revokeObjectURL(uploadedUrls['photo']);
-    if(uploadedUrls['sig']) URL.revokeObjectURL(uploadedUrls['sig']);
-    delete uploadedUrls['photo'];
-    delete uploadedUrls['sig'];
-  }
+    // Reset upload state so we don't accidentally reuse a previous session's files
+    delete uploadedB64['photo'];
+    delete uploadedB64['sig'];
+    delete uploadedFiles['photo'];
+    delete uploadedFiles['sig'];
+    if(uploadedUrls) {
+      if(uploadedUrls['photo']) URL.revokeObjectURL(uploadedUrls['photo']);
+      if(uploadedUrls['sig']) URL.revokeObjectURL(uploadedUrls['sig']);
+      delete uploadedUrls['photo'];
+      delete uploadedUrls['sig'];
+    }
 
-  // Reset the file-zone UI
-  const photoZone = document.getElementById('zone-photo');
-  const sigZone   = document.getElementById('zone-sig');
-  if(photoZone) photoZone.innerHTML =
-    '<div class="file-icon" id="icon-photo">📷</div><div class="file-info"><p id="fname-photo">Current photo on file (click to replace with passport size photo)</p><small id="fsize-photo">50 KB – 200 KB</small></div>';
-  if(sigZone) sigZone.innerHTML =
-    '<div class="file-icon" id="icon-sig">✍️</div><div class="file-info"><p id="fname-sig">Current signature on file (click to replace)</p><small id="fsize-sig">20 KB – 100 KB</small></div>';
+    // Reset the file-zone UI
+    const photoZone = document.getElementById('zone-photo');
+    const sigZone   = document.getElementById('zone-sig');
+    if(photoZone) photoZone.innerHTML =
+      '<div class="file-icon" id="icon-photo">📷</div><div class="file-info"><p id="fname-photo">Current photo on file (click to replace with passport size photo)</p><small id="fsize-photo">50 KB – 200 KB</small></div>';
+    if(sigZone) sigZone.innerHTML =
+      '<div class="file-icon" id="icon-sig">✍️</div><div class="file-info"><p id="fname-sig">Current signature on file (click to replace)</p><small id="fsize-sig">20 KB – 100 KB</small></div>';
 
-  // Clear any previous errors
-  ['ns-name','ns-guardian','ns-roll','ns-dob','photo','ns-contact','ns-gcontact','ns-email','ns-pin','ns-semester','sig','ns-submit'].forEach(id => {
-    const el = document.getElementById('err-'+id);
-    if(el) el.classList.add('hidden');
-  });
+    // Clear any previous errors
+    ['ns-name','ns-guardian','ns-roll','ns-dob','photo','ns-contact','ns-gcontact','ns-email','ns-pin','ns-semester','sig','ns-submit'].forEach(id => {
+      const el = document.getElementById('err-'+id);
+      if(el) el.classList.add('hidden');
+    });
 
-  // ── Pre-fill Step 0: Personal Info ──────────────────────────────────────
-  document.getElementById('ns-name').value     = csStudent.name || '';
-  document.getElementById('ns-guardian').value = csStudent.guardianName || '';
+    // ── Pre-fill Step 0: Personal Info ──────────────────────────────────────
+    const nsName = document.getElementById('ns-name');
+    if(nsName) nsName.value = csStudent.name || '';
+    const nsGuardian = document.getElementById('ns-guardian');
+    if(nsGuardian) nsGuardian.value = csStudent.guardianName || '';
 
-  // Split rollFull "25/CSE/2026" back into the three input fields
-  const rollParts = String(csStudent.rollFull || '').split('/');
-  if(rollParts.length === 3) {
-    document.getElementById('ns-roll-no').value     = rollParts[0] || '';
-    document.getElementById('ns-roll-branch').value = rollParts[1] || 'CSE';
-    document.getElementById('ns-roll-year').value   = rollParts[2] || '';
-  } else {
-    document.getElementById('ns-roll-no').value     = '';
-    document.getElementById('ns-roll-branch').value = 'CSE';
-    document.getElementById('ns-roll-year').value   = '';
-  }
-  updateRollPreview();
+    // Split rollFull "25/CSE/2026" back into the three input fields
+    const rollParts = String(csStudent.rollFull || '').split('/');
+    const nsRollNo = document.getElementById('ns-roll-no');
+    const nsRollBranch = document.getElementById('ns-roll-branch');
+    const nsRollYear = document.getElementById('ns-roll-year');
+    if(rollParts.length === 3) {
+      if(nsRollNo) nsRollNo.value = rollParts[0] || '';
+      if(nsRollBranch) nsRollBranch.value = rollParts[1] || 'CSE';
+      if(nsRollYear) nsRollYear.value = rollParts[2] || '';
+    } else {
+      if(nsRollNo) nsRollNo.value = '';
+      if(nsRollBranch) nsRollBranch.value = 'CSE';
+      if(nsRollYear) nsRollYear.value = '';
+    }
+    if(typeof updateRollPreview === 'function') updateRollPreview();
 
-  // DOB: backend now always returns YYYY-MM-DD (post Bug #2 fix). For older
-  // records that may still arrive as ISO timestamps, extract the date part.
-  let dobVal = csStudent.dob || '';
-  if(dobVal) {
-    const m = String(dobVal).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if(m) dobVal = m[1]+'-'+m[2]+'-'+m[3];
-    else dobVal = '';
-  }
-  document.getElementById('ns-dob').value = dobVal;
+    // DOB: backend now always returns YYYY-MM-DD (post Bug #2 fix). For older
+    // records that may still arrive as ISO timestamps, extract the date part.
+    let dobVal = csStudent.dob || '';
+    if(dobVal) {
+      const m = String(dobVal).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if(m) dobVal = m[1]+'-'+m[2]+'-'+m[3];
+      else dobVal = '';
+    }
+    const nsDob = document.getElementById('ns-dob');
+    if(nsDob) nsDob.value = dobVal;
 
-  // ── Pre-fill Step 1: Contact & Address ──────────────────────────────────
-  document.getElementById('ns-contact').value  = csStudent.contactNo || '';
-  document.getElementById('ns-gcontact').value = csStudent.guardianContact || '';
-  document.getElementById('ns-email').value    = csStudent.email || '';
-  document.getElementById('ns-pin').value      = csStudent.pin || '';
-  document.getElementById('ns-address').value  = csStudent.address || '';
+    // ── Pre-fill Step 1: Contact & Address ──────────────────────────────────
+    const nsContact = document.getElementById('ns-contact');
+    if(nsContact) nsContact.value = csStudent.contactNo || '';
+    const nsGcontact = document.getElementById('ns-gcontact');
+    if(nsGcontact) nsGcontact.value = csStudent.guardianContact || '';
+    const nsEmail = document.getElementById('ns-email');
+    if(nsEmail) nsEmail.value = csStudent.email || '';
+    const nsPin = document.getElementById('ns-pin');
+    if(nsPin) nsPin.value = csStudent.pin || '';
+    const nsAddress = document.getElementById('ns-address');
+    if(nsAddress) nsAddress.value = csStudent.address || '';
 
-  // District dropdown — populated on DOMContentLoaded from BIHAR_DISTRICTS.
-  // If the student's district is in the list, select it; otherwise leave blank.
-  const districtEl = document.getElementById('ns-district');
-  if(districtEl) {
-    const targetDistrict = csStudent.district || '';
-    const opts = Array.from(districtEl.options);
-    const matchOpt = opts.find(o => o.value === targetDistrict || o.text === targetDistrict);
-    if(matchOpt) districtEl.value = matchOpt.value;
-    else districtEl.value = '';
-  }
+    // District dropdown — populated on DOMContentLoaded from BIHAR_DISTRICTS.
+    // If the student's district is in the list, select it; otherwise leave blank.
+    const districtEl = document.getElementById('ns-district');
+    if(districtEl) {
+      const targetDistrict = csStudent.district || '';
+      const opts = Array.from(districtEl.options);
+      const matchOpt = opts.find(o => o.value === targetDistrict || o.text === targetDistrict);
+      if(matchOpt) districtEl.value = matchOpt.value;
+      else districtEl.value = '';
+    }
 
-  // Admission session — parse "Odd 2026" / "Even 2025" back into the two inputs
-  const admSess = csStudent.admissionSession || csStudent.semesterNo || '';
-  const sessParts = admSess.trim().match(/^(Odd|Even)\s+(\d{4})$/i);
-  if(sessParts) {
+    // Admission session — parse "Odd 2026" / "Even 2025" back into the two inputs
+    const admSess = csStudent.admissionSession || csStudent.semesterNo || '';
+    const sessParts = admSess.trim().match(/^(Odd|Even)\s+(\d{4})$/i);
     const semTypeEl = document.getElementById('ns-sem-type');
     const semYearEl = document.getElementById('ns-sem-year');
-    if(semTypeEl) semTypeEl.value = sessParts[1].charAt(0).toUpperCase() + sessParts[1].slice(1).toLowerCase();
-    if(semYearEl) semYearEl.value = sessParts[2];
-  } else {
-    document.getElementById('ns-sem-type').value = 'Odd';
-    document.getElementById('ns-sem-year').value = '';
+    if(sessParts) {
+      if(semTypeEl) semTypeEl.value = sessParts[1].charAt(0).toUpperCase() + sessParts[1].slice(1).toLowerCase();
+      if(semYearEl) semYearEl.value = sessParts[2];
+    } else {
+      if(semTypeEl) semTypeEl.value = 'Odd';
+      if(semYearEl) semYearEl.value = '';
+    }
+    if(typeof composeAdmissionSession === 'function') composeAdmissionSession();
+
+    // ── Pre-fill Step 2: Signature + Access Key ─────────────────────────────
+    // Access Key: leave blank — the backend will keep the existing key if not provided.
+    // Show a hint that the key is optional in edit mode.
+    const nsAccessKey = document.getElementById('ns-access-key');
+    if(nsAccessKey) nsAccessKey.value = '';
+    const nsAccessKeyConfirm = document.getElementById('ns-access-key-confirm');
+    if(nsAccessKeyConfirm) nsAccessKeyConfirm.value = '';
+
+    // Toggle the access-key section to make it optional in edit mode
+    const akHintEl = document.querySelector('#ns-step-2 .hint');
+    if(akHintEl) {
+      akHintEl.textContent = 'Leave blank to keep your existing Access Key. Or enter a new one (4–32 chars) to change it.';
+    }
+
+    // Change the submit button label and the step-2 info banner
+    const submitBtn = document.getElementById('ns-submit-btn');
+    if(submitBtn) submitBtn.textContent = 'Update Application & Re-submit';
+
+    const step2Banner = document.querySelector('#ns-step-2 .alert-info');
+    if(step2Banner) {
+      step2Banner.innerHTML = '<strong>📋 Editing rejected application</strong><br/>'+
+        'Correct the issue(s) mentioned in the rejection reason and click <strong>Update Application &amp; Re-submit</strong>. '+
+        'Your application will be sent back to the Warden for review. Photo and signature are optional — if you do not upload new ones, your existing ones will be kept.';
+    }
+
+    // Hide the success screen (in case it was visible from a previous submission)
+    const nsSuccess = document.getElementById('ns-success');
+    if(nsSuccess) nsSuccess.classList.add('hidden');
+
+    // Show the new-student section starting at step 0
+    showSection('new-student');
+    nsGo(0);
+    window.scrollTo({top:0, behavior:'smooth'});
+  } catch(e) {
+    // v37.6: If anything in the function throws, show a clear error
+    console.error('editRejectedAdmission error:', e);
+    toast('Error opening edit form: ' + e.message, 'error');
+    // Also try to show the form anyway (best effort) so the student isn't stuck
+    try { showSection('new-student'); nsGo(0); } catch(_) {}
   }
-  composeAdmissionSession();
-
-  // ── Pre-fill Step 2: Signature + Access Key ─────────────────────────────
-  // Access Key: leave blank — the backend will keep the existing key if not provided.
-  // Show a hint that the key is optional in edit mode.
-  document.getElementById('ns-access-key').value = '';
-  document.getElementById('ns-access-key-confirm').value = '';
-
-  // Toggle the access-key section to make it optional in edit mode
-  const akHintEl = document.querySelector('#ns-step-2 .hint');
-  if(akHintEl) {
-    akHintEl.textContent = 'Leave blank to keep your existing Access Key. Or enter a new one (4–32 chars) to change it.';
-  }
-
-  // Change the submit button label and the step-2 info banner
-  const submitBtn = document.getElementById('ns-submit-btn');
-  if(submitBtn) submitBtn.textContent = 'Update Application & Re-submit';
-
-  const step2Banner = document.querySelector('#ns-step-2 .alert-info');
-  if(step2Banner) {
-    step2Banner.innerHTML = '<strong>📋 Editing rejected application</strong><br/>'+
-      'Correct the issue(s) mentioned in the rejection reason and click <strong>Update Application &amp; Re-submit</strong>. '+
-      'Your application will be sent back to the Warden for review. Photo and signature are optional — if you do not upload new ones, your existing ones will be kept.';
-  }
-
-  // Hide the success screen (in case it was visible from a previous submission)
-  document.getElementById('ns-success').classList.add('hidden');
-
-  // Show the new-student section starting at step 0
-  showSection('new-student');
-  nsGo(0);
-  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 // NOTE: The old monkey-patch code for nsValidate and nsSubmit has been removed.
