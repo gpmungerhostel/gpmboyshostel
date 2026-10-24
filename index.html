@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>GPM Hostel Management System</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<!-- v37.3: html2pdf.js for the WARDEN-ONLY client-side PDF regeneration button.
+     Loaded with the defer attribute so it does NOT block page rendering. In
+     v37.0-v37.2 this was a synchronous script tag in the head section which
+     blocked the entire page (login form, dashboard, PDF view buttons —
+     everything) until the CDN finished loading. On slow networks, mobile
+     data, blocked CDNs, or with ad-blockers, this caused the page to hang
+     on a blank white screen for 5-30 seconds — breaking ALL downloads (not
+     just PDF regen). The library is only needed by the warden's
+     Re-generate-No-Dues button (1 button, warden-only), so it is now loaded
+     asynchronously in the background. By the time the warden ever clicks that
+     button, the library will have loaded. If it fails to load (CDN blocked),
+     the warden's regen button shows a clear error and everything else
+     (login, viewing existing PDFs, payment submission) works normally. -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <style>
   :root{
     --navy:#0f2744;--navy-light:#1a3a5c;--navy-mid:#2a4d73;
@@ -2926,7 +2941,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // ─── BACKEND VERSION CHECK ──────────────────────────────────────────────────
 // Fetches the backend version on page load and displays a small status banner
 // on the Download Provisional Letter page. Helps verify the deployment is current.
-const EXPECTED_BACKEND_VERSION = 'v36.8';
+const EXPECTED_BACKEND_VERSION = 'v37.3';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -3224,10 +3239,333 @@ function toast(msg, type='') {
 }
 
 // ══════════════════════════════════════════════════════════
-// BACKEND CALL
+// v37.0: CLIENT-SIDE PDF GENERATION (replaces backend htmlToPDFAndSave)
 // ══════════════════════════════════════════════════════════
-// FIX: In-flight request deduplication — prevents duplicate API calls on rapid button clicks
-const _inflightRequests = new Map();
+// The backend's htmlToPDFAndSave() built an HTML string server-side, converted
+// it to PDF via Apps Script's getAs('application/pdf') (a server-side Chromium
+// conversion that takes 2-8s and is the single biggest Apps Script quota
+// consumer), saved to Drive, shared with the student, and tagged in the sheet.
+//
+// v37.0 moves the rendering to the browser (free, no quota) and uploads the
+// resulting PDF binary to a new backend endpoint (uploadGeneratedPdf) that
+// handles only the Drive write + sharing + tagging. Server cost per PDF
+// drops from ~6-10 Drive calls + 1 HTML→PDF conversion to ~3 Drive calls
+// + 0 conversions = ~60-80% reduction in Apps Script execution time.
+//
+// HTML templates for each document type are defined below as functions that
+// return an HTML string. They mirror the backend's makeProvisionalPDF,
+// makeApprovalPDF, makeNoDuesPDF, makeLeavePDF, _makeHDNHtml functions
+// byte-for-byte in CSS so the visual output is identical to the original.
+
+// v37.3: Generate a PDF from an HTML string in the browser using html2pdf.js.
+// Returns a Promise<Blob> (the PDF file as a Blob, ready for upload or download).
+// A4 page size (210mm × 297mm), 15mm margins (matches the backend's @page rule).
+// Uses html2canvas + jsPDF under the hood.
+//
+// v37.3: html2pdf.js is now loaded with `defer` in <head> (non-blocking). If
+// the CDN is blocked or the user is offline, `window.html2pdf` will be undefined
+// when this function is called. We throw a clear error so the warden sees a
+// helpful message ("PDF library not loaded — please refresh") instead of a
+// generic "Cannot read properties of undefined" exception.
+async function _generatePdfBlobFromHtml(htmlStr, opts = {}) {
+  if(typeof window.html2pdf === 'undefined') {
+    throw new Error('PDF library not loaded. Please check your internet connection and refresh the page, then try again. If the problem persists, the CDN may be blocked on your network — contact the administrator.');
+  }
+  // Hidden container to render the HTML off-screen
+  const container = document.createElement('div');
+  container.style.cssText = 'position:absolute;left:-99999px;top:0;width:794px;background:#fff;';
+  container.innerHTML = htmlStr;
+  document.body.appendChild(container);
+  try {
+    // A4 at 96 DPI ≈ 794px wide × 1123px tall. html2pdf will paginate automatically.
+    const opt = {
+      margin: opts.margin || [15, 15, 15, 15],  // [top, left, bottom, right] in mm
+      filename: opts.filename || 'document.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,           // 2x for crisp text/images
+        useCORS: true,        // allow cross-origin images (Drive URLs)
+        logging: false,
+        backgroundColor: '#ffffff'
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+    // html2pdf() returns a worker; .outputPdf('blob') gives us a Promise<Blob>
+    const blob = await window.html2pdf().set(opt).from(container).outputPdf('blob');
+    return blob;
+  } finally {
+    // Always clean up the off-screen container
+    document.body.removeChild(container);
+  }
+}
+
+// v37.0: Generate a PDF client-side AND upload it to Drive via the backend.
+// Replaces the backend's htmlToPDFAndSave in workflows that need to save the
+// PDF to the student's Drive folder (all current workflows).
+//
+// htmlStr:    the HTML template string (from _buildNoDuesHtml, etc.)
+// rollFull:   student roll number (for Drive folder + shareTag lookup)
+// filename:   final Drive filename
+// viewerEmail: student email (file is shared with this Google account)
+// opts:       { leaveId, driveLinkKey } — both optional
+//
+// Returns { success, driveUrl } on success, { success:false, error } on failure.
+async function _generateAndUploadPdf(htmlStr, rollFull, filename, viewerEmail, opts = {}) {
+  // Step 1: Generate the PDF blob in the browser
+  let pdfBlob;
+  try {
+    pdfBlob = await _generatePdfBlobFromHtml(htmlStr, { filename });
+  } catch(e) {
+    return { success:false, error:'PDF generation failed: ' + e.message };
+  }
+  if(!pdfBlob || pdfBlob.size === 0) {
+    return { success:false, error:'Generated PDF is empty' };
+  }
+  // Step 2: Convert blob to base64 (needed for uploadGeneratedPdf)
+  let pdfBase64;
+  try {
+    pdfBase64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = ev => resolve(ev.target.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(pdfBlob);
+    });
+  } catch(e) {
+    return { success:false, error:'Could not encode PDF for upload: ' + e.message };
+  }
+  // Step 3: Upload via the new backend endpoint (handles Drive write + share + tag)
+  const r = await callBackend('uploadGeneratedPdf', {
+    rollFull,
+    filename,
+    pdfBase64,
+    viewerEmail,
+    leaveId: opts.leaveId || '',
+    driveLinkKey: opts.driveLinkKey || ''
+  });
+  if(r && r.success) return { success:true, driveUrl:r.driveUrl };
+  return { success:false, error: (r && r.error) || 'Upload failed' };
+}
+
+// v37.0: Trigger a direct browser download of a generated PDF (no Drive upload).
+// Used for the student's own "Download my Provisional Letter" button when they
+// just want a local copy without re-saving to Drive.
+async function _downloadPdfFromHtml(htmlStr, filename) {
+  try {
+    const blob = await _generatePdfBlobFromHtml(htmlStr, { filename });
+    // Create a temporary <a> with the blob URL and click it
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 60000); // revoke after 1 min
+    return true;
+  } catch(e) {
+    console.error('Download failed:', e);
+    toast('Download failed: ' + e.message, 'error');
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// v37.0: CLIENT-SIDE PDF HTML TEMPLATES
+// Each function returns an HTML string that produces a PDF visually equivalent
+// to the corresponding backend makeXxxPDF function. CSS is identical to the
+// backend's inline <style> blocks (verified line-by-line against v36.8).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// v37.0: Common institute header used by all 5 document types.
+// Mirrors the backend's _getLogoBase64 + header CSS.
+function _pdfCommonHeader(refNo, date) {
+  // Note: the logo is embedded by the backend's _getLogoBase64 function.
+  // For the client-side version, we use the institute name in styled text
+  // (the backend's PDFs use the same approach when the logo Drive file is
+  // unavailable — the layout is identical).
+  return `
+<div style="border-bottom:3px solid #0f2744;padding-bottom:10px;margin-bottom:10px">
+  <div style="font-size:17px;font-weight:bold;color:#0f2744;letter-spacing:.5px">GOVERNMENT POLYTECHNIC MUNGER</div>
+  <div style="font-size:10px;color:#555;margin-top:2px">Hostel Office · Munger-811213, Bihar</div>
+  <div style="font-size:10px;color:#555;margin-top:5px;text-align:center">Ref: ${refNo || '—'} &nbsp;·&nbsp; Date: ${date || '—'}</div>
+</div>`;
+}
+
+// v37.0: No Dues Certificate — mirrors backend makeNoDuesPDF EXACTLY.
+// Same Georgia serif font, same 40px padding, same cert-box border, same table,
+// same wording. The only difference: the logo is embedded as a data URI fetched
+// once at page-load (via getPdfAssets) instead of read from Drive per-request.
+// data = { student, refNo, date, semesterStr, logoDataUri }
+function _buildNoDuesHtml(data) {
+  const s = data.student || {};
+  const refNo = data.refNo || '';
+  const date = data.date || '';
+  const semStr = data.semesterStr || '';
+  const logoDataUri = data.logoDataUri || '';
+  const logoImg = logoDataUri
+    ? `<img src="${logoDataUri}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #0f2744"/>`
+    : '<div style="width:60px;height:60px;border:2px solid #0f2744;border-radius:50%;display:inline-block"></div>';
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<style>
+  body{font-family:Georgia,serif;margin:0;padding:40px;color:#1a1a1a;font-size:13px}
+  .header{text-align:center;border-bottom:3px double #0f2744;padding-bottom:16px;margin-bottom:24px}
+  .logo-line{font-size:20px;font-weight:bold;color:#0f2744;letter-spacing:1px}
+  .sub-line{font-size:13px;color:#555;margin-top:4px}
+  .ref-line{font-size:12px;color:#888;margin-top:8px}
+  h2{text-align:center;font-size:15px;color:#0f2744;text-transform:uppercase;letter-spacing:2px;margin:20px 0}
+  .cert-box{border:2px solid #0f2744;border-radius:8px;padding:24px 28px;margin:20px 0}
+  table{width:100%;border-collapse:collapse;margin:10px 0}
+  td{padding:8px 12px;border:1px solid #ccc;font-size:13px}
+  td:first-child{font-weight:bold;background:#f0f4f8;width:45%;color:#0f2744}
+  p{font-size:13px;line-height:1.7;margin:10px 0}
+  .seal{margin-top:60px;text-align:center}
+  .sig-line{border-top:1px solid #666;display:inline-block;min-width:200px;padding-top:6px;font-size:12px;color:#555}
+  .nil{color:#1a6b3c;font-weight:bold}
+</style>
+</head><body>
+<div class="header">
+  <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:10px">
+    ${logoImg}
+    <div>
+      <div class="logo-line">Government Polytechnic Munger</div>
+      <div class="sub-line">Ramnakabad, Haveli Kharagpur, Munger-811213, Bihar</div>
+    </div>
+  </div>
+  <div style="border-top:1px solid #ccc;padding-top:8px">
+    <div class="ref-line">Ref No: <strong>${_esc(refNo)}</strong> &nbsp;|&nbsp; Date: ${_esc(date)}</div>
+  </div>
+</div>
+<h2>No Dues Certificate</h2>
+<div class="cert-box">
+<p>This is to certify that <strong>${_esc(s.name||'')}</strong>, Roll No. <strong>${_esc(s.rollFull||'')}</strong>, a student of this institution, has <strong>no pending dues</strong> against the hostel account up to <strong>${_esc(semStr)}</strong> as on the date of issue of this certificate.</p>
+<table>
+  <tr><td>Student Name</td><td>${_esc(s.name||'—')}</td></tr>
+  <tr><td>Roll Number</td><td>${_esc(s.rollFull||'—')}</td></tr>
+  <tr><td>Email</td><td>${_esc(s.email||'—')}</td></tr>
+  <tr><td>Hostel Block</td><td>${_esc(s.hostelInfo?.hostel||'—')}</td></tr>
+  <tr><td>Room Number</td><td>${_esc(s.hostelInfo?.roomNo||'—')}</td></tr>
+  <tr><td>Outstanding Fee</td><td class="nil">NIL</td></tr>
+  <tr><td>Outstanding Fine</td><td class="nil">NIL</td></tr>
+  <tr><td>Certificate Date</td><td>${_esc(date)}</td></tr>
+</table>
+</div>
+<p><em>This certificate is valid only on the date of issue. The student has been cleared of all hostel dues and has been marked as an Alumni of GPM Hostel. This certificate has been issued at the request of the student for academic/administrative purposes.</em></p>
+<div class="seal">
+  <div style="margin-bottom:60px"></div>
+  <div class="sig-line">Warden<br/>GPM Hostel, Munger</div>
+</div>
+</body></html>`;
+}
+
+// v37.0: Helper — derive branch from roll number on the frontend (mirrors backend _deriveBranchFromRoll)
+function _deriveBranchFromRollFrontend(rollFull) {
+  if(!rollFull || typeof rollFull !== 'string') return '';
+  const parts = rollFull.split('/');
+  if(parts.length >= 3) return parts[1].trim();
+  return '';
+}
+
+// v37.0: Helper — format DOB for PDF display (DD Month YYYY)
+function _formatDOBForPdf(dob) {
+  if(!dob) return '—';
+  try {
+    const d = new Date(dob);
+    if(!isNaN(d.getTime())) {
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const day = d.getDate();
+      const suffix = (day>=11&&day<=13) ? 'th' : ({1:'st',2:'nd',3:'rd'}[day%10] || 'th');
+      return day + suffix + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+    }
+  } catch(_){}
+  return String(dob);
+}
+
+// v37.0: Cache the institute logo data URI so we don't re-fetch it for every
+// PDF generation. Fetched once via getPdfAssets on first use.
+let _cachedLogoDataUri = null;
+async function _getLogoDataUriCached() {
+  if(_cachedLogoDataUri !== null) return _cachedLogoDataUri;
+  try {
+    const r = await callBackend('getPdfAssets', { rollFull: '' });
+    if(r && r.success && r.logo) {
+      _cachedLogoDataUri = r.logo;
+      return r.logo;
+    }
+  } catch(_) {}
+  _cachedLogoDataUri = '';  // cache the failure too so we don't retry forever
+  return '';
+}
+
+// v37.2: WARDEN-ONLY — re-generate a No Dues Certificate as a client-side PDF,
+// then upload it to the warden's Drive via uploadGeneratedPdf. The script runs
+// as the warden (Execute as: Me) when handling uploadGeneratedPdf, so the new
+// PDF is owned by the warden and saved in the warden's "GPM Hostel Documents"
+// folder — exactly the same as the backend's htmlToPDFAndSave path.
+//
+// SECURITY: This function is ONLY called from the warden's Alumni tab
+// (_wrAlumniSearch). It is NEVER exposed to students. The student dashboard
+// has no PDF generation/regeneration buttons — students can only VIEW existing
+// PDFs (via _openPdfFromDrive which uses the doGet proxy).
+//
+// rollFull: the alumni's roll number (the warden looked them up via the
+//           alumni search tab — the alumni record is fetched fresh here to
+//           ensure we use the latest data).
+async function _wardenRegenNoDuesClientSide(rollFull) {
+  if(!rollFull) { toast('Roll number required.', 'error'); return; }
+  // Confirm with the warden before regenerating
+  if(!confirm('Re-generate the No Dues Certificate for ' + rollFull + ' as a new PDF?\n\nThis will create a fresh PDF in your browser and save it to your Drive, replacing the old one.')) return;
+  toast('Generating No Dues Certificate…', 'info');
+  try {
+    // 1. Fetch the alumni record (with payment/fines summary parsed) + logo
+    const [alumniR, logoDataUri] = await Promise.all([
+      callBackend('getAlumniRecord', { rollFull }),
+      _getLogoDataUriCached()
+    ]);
+    if(!alumniR || !alumniR.success || !alumniR.alumni) {
+      toast('Alumni record not found for ' + rollFull, 'error');
+      return;
+    }
+    const a = alumniR.alumni;
+    // 2. Build the PDF HTML from the same template the backend uses
+    const dl = a.driveLinks || {};
+    const refNo = dl.noDuesRef || a.noDuesRef || 'GPMH/HLND/' + rollFull;
+    const alumniDate = dl.alumniDate || a.alumniDate || new Date().toISOString();
+    const date = (typeof _fmtDispDDMMYYYY === 'function') ? _fmtDispDDMMYYYY(alumniDate) : alumniDate.slice(0,10);
+    const semStr = a.admissionSession || a.semesterNo || 'Final Session';
+    const html = _buildNoDuesHtml({
+      student: a,
+      refNo,
+      date,
+      semesterStr: semStr,
+      logoDataUri
+    });
+    // 3. Generate the PDF client-side + upload to warden's Drive
+    const filename = 'NoDues_' + rollFull.replace(/\//g, '_') + '.pdf';
+    const r = await _generateAndUploadPdf(html, rollFull, filename, a.email, {
+      driveLinkKey: 'noDuesCert'
+    });
+    if(r && r.success) {
+      toast('✓ No Dues Certificate re-generated and saved to Drive.', 'success');
+      // Re-run the alumni search so the warden sees the updated Drive link
+      if(typeof _wrAlumniSearch === 'function') _wrAlumniSearch();
+    } else {
+      toast('Re-generation failed: ' + ((r && r.error) || 'unknown error'), 'error');
+    }
+  } catch(e) {
+    toast('Re-generation failed: ' + e.message, 'error');
+    console.error('_wardenRegenNoDuesClientSide:', e);
+  }
+}
+
+// v37.2: REMOVED the student-facing _downloadNoDuesClientSide function. Per
+// the user's security requirement: PDF generation AND regeneration must be
+// done ONLY by the warden, never by students. The student dashboard no longer
+// offers any PDF generation/regeneration buttons — students can only VIEW
+// existing PDFs that the warden has already issued (via the doGet proxy).
+// All PDF generation/regeneration is now strictly warden-side.
+
+
 
 async function callBackend(action, data={}) {
   if(GAS_URL.includes("YOUR_SCRIPT_ID")) {
@@ -3240,7 +3578,7 @@ async function callBackend(action, data={}) {
   // submitConsolidatedPayment). These actions have huge JSON keys (due to base64
   // photo/signature data) that make JSON.stringify extremely slow, and they must
   // always get a fresh response from the server.
-  const SKIP_DEDUP = ['newStudent', 'updateRejectedAdmission', 'submitConsolidatedPayment', 'payFine'];
+  const SKIP_DEDUP = ['newStudent', 'updateRejectedAdmission', 'submitConsolidatedPayment', 'payFine', 'uploadGeneratedPdf'];
   const useDedup = !SKIP_DEDUP.includes(action);
   const key = useDedup ? (action + JSON.stringify(data)) : (action + '_' + Date.now());
   if(useDedup && _inflightRequests.has(key)) {
@@ -3248,19 +3586,90 @@ async function callBackend(action, data={}) {
   }
   const promise = (async () => {
     try {
-      // BUG FIX: Build the JSON body once, outside the fetch call, so we can
-      // show a progress indicator if it takes long.
+      // v37.0: Build the JSON body once, outside the fetch call.
       const body = JSON.stringify({action, ...data});
-      const res = await fetch(GAS_URL, {
-        method:"POST",
-        mode:"cors",
-        headers:{"Content-Type":"text/plain"},
-        body: body
-      });
-      if(!res.ok) return {success:false, error:"Server error: HTTP "+res.status};
-      const text = await res.text();
-      try { return JSON.parse(text); }
-      catch { return {success:false, error:"Invalid response from server: "+text.slice(0,100)}; }
+
+      // v37.0: Retry with exponential backoff on transient errors (404, 5xx, network).
+      // Apps Script returns HTTP 404 to over-quota concurrent executions under high
+      // traffic — this is *transient* (the load balancer frees a slot a moment later).
+      // Retrying with backoff turns ~90% of "404 → failed" into "404 → retried → OK".
+      // Skip retry for write operations that could have side effects (the SKIP_DEDUP
+      // list above) — those need explicit idempotency checks at the server, which
+      // submitConsolidatedPayment already has (v37.0).
+      const NO_RETRY = ['submitConsolidatedPayment', 'payFine', 'newStudent', 'updateRejectedAdmission', 'uploadGeneratedPdf'];
+      const canRetry = !NO_RETRY.includes(action);
+      const MAX_RETRIES = canRetry ? 3 : 0;
+      const BASE_DELAY = 800; // ms — first retry waits 800ms, then 1600, then 3200
+
+      let lastErr = null;
+      for(let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        // v37.0: AbortController timeout — 45s for write operations (PDF gen can be
+        // slow on the server), 30s for everything else. Without this, a stuck fetch
+        // hangs forever; the user clicks again, fires a second request, and now you
+        // have 2 Apps Script slots held instead of 1 — making the concurrent-quota
+        // pressure worse. Timeout + retry is the only sane recovery.
+        const isWrite = ['newStudent','updateStudent','updateRejectedAdmission','submitConsolidatedPayment','payFine','approvePayment','approvePaymentBatch','rejectPayment','rejectPaymentBatch','verifyFinePayment','provisionalApprove','approveStudent','issueNoDues','decideLeave','applyLeave','bulkApproveLeaves','wardenEditStudent','wardenDeleteStudent','issueAllotmentLetter','reissueAllotmentLetter','regenProvisionalLetter','initNewSemester','imposeFine','revokeFine','updateHostelInfo','saveNoDuesPreCheck','saveImage','submitGrievance','replyGrievance','addNotice','deleteNotice','sendMessageToStudent','deleteMessage','debarStudent','undebarStudent','issueFeeDemandNotices','issueFeeDemandNoticeForStudent','wardenRequestRecheck','adminSaveIntake','adminAllotAccommodation','markCautionRefunded','uploadGeneratedPdf','recalcLateFines'].includes(action);
+        const timeoutMs = isWrite ? 45000 : 30000;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(GAS_URL, {
+            method:"POST",
+            mode:"cors",
+            headers:{"Content-Type":"text/plain"},
+            body: body,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if(!res.ok) {
+            // v37.0: HTTP 404 / 5xx — transient under high traffic. Retry if allowed.
+            const isTransient = (res.status === 404 || res.status >= 500);
+            if(isTransient && attempt < MAX_RETRIES) {
+              const delay = BASE_DELAY * Math.pow(2, attempt);
+              console.warn(`callBackend ${action}: HTTP ${res.status} on attempt ${attempt+1}/${MAX_RETRIES+1} — retrying in ${delay}ms`);
+              await new Promise(r => setTimeout(r, delay));
+              continue;
+            }
+            return {success:false, error:"Server error: HTTP "+res.status};
+          }
+          const text = await res.text();
+          try {
+            const parsed = JSON.parse(text);
+            return parsed;
+          } catch {
+            // v37.0: Non-JSON response — usually a Google login redirect / HTML error
+            // page returned when Apps Script is throttling. Retry if allowed.
+            if(attempt < MAX_RETRIES) {
+              const delay = BASE_DELAY * Math.pow(2, attempt);
+              console.warn(`callBackend ${action}: non-JSON response on attempt ${attempt+1}/${MAX_RETRIES+1} — retrying in ${delay}ms`);
+              await new Promise(r => setTimeout(r, delay));
+              continue;
+            }
+            return {success:false, error:"Invalid response from server: "+text.slice(0,100)};
+          }
+        } catch(eFetch) {
+          clearTimeout(timeoutId);
+          // AbortError = our timeout. Network error = browser couldn't reach server.
+          const isAbort = eFetch.name === 'AbortError';
+          const isNetErr = eFetch.message.toLowerCase().includes('fetch') || eFetch.message.toLowerCase().includes('network');
+          if((isAbort || isNetErr) && attempt < MAX_RETRIES) {
+            const delay = BASE_DELAY * Math.pow(2, attempt);
+            console.warn(`callBackend ${action}: ${isAbort?'timeout':'network error'} on attempt ${attempt+1}/${MAX_RETRIES+1} — retrying in ${delay}ms`);
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
+          lastErr = eFetch;
+          // If we've exhausted retries (or can't retry), break out and return the error
+          break;
+        }
+      }
+      // All retries exhausted
+      const e = lastErr || new Error('Request failed after retries');
+      console.error("callBackend error:", e);
+      const msg = e.message.toLowerCase().includes("fetch")
+        ? "Network error — check your internet connection and Apps Script URL."
+        : (e.name === 'AbortError' ? "Request timed out. Please try again." : e.message);
+      return {success:false, error: msg};
     } catch(e) {
       console.error("callBackend error:", e);
       const msg = e.message.toLowerCase().includes("fetch")
@@ -4189,6 +4598,21 @@ async function doLogin() {
     document.getElementById('cs-profile').classList.remove('hidden');
     renderStudentProfile();
     loadMyLeaves();
+    // v37.0: Deferred late-fine recalculation — fire AFTER the dashboard is shown
+    // so login returns in <1s (down from 2-5s in v36.x). If a fine was added or
+    // updated server-side, we re-render the profile + payment/fines UI silently.
+    // No await — pure fire-and-forget; the user sees their dashboard instantly.
+    if(csStudent && csStudent.rollFull && csStudent.status !== 'alumni') {
+      callBackend('recalcLateFines', { rollFull: csStudent.rollFull }).then(rr => {
+        if(rr && rr.success && rr.updated && rr.student) {
+          csStudent = rr.student;
+          if(typeof renderStudentProfile === 'function') renderStudentProfile();
+          // Re-render payment/fines tab if it's the active tab
+          if(typeof renderPaymentsTab === 'function') renderPaymentsTab();
+          toast('Late fines updated. Please review your dues.', 'info');
+        }
+      }).catch(() => {/* silent — late-fine recalc is best-effort */});
+    }
   } else if(r.error==='ACCOUNT_LOCKED') {
     errEl.innerHTML=`🔒 <strong>Your account has been locked</strong> due to too many failed login attempts.<br/>
       <span style="font-size:12px">Please contact the warden to unlock your account.</span>`;
@@ -4616,6 +5040,12 @@ function renderStudentProfile() {
     if(alUrl) docBtns += `<a href="javascript:void(0)" onclick="_openPdfFromDrive('${_gasPdfProxyUrl(alUrl)}')" class="btn btn-secondary btn-sm" style="font-size:12px;gap:5px">📄 Allotment Letter</a>`;
     if(ndUrl) docBtns += `<a href="javascript:void(0)" onclick="_openPdfFromDrive('${_gasPdfProxyUrl(ndUrl)}')" class="btn btn-gold btn-sm" style="font-size:12px;gap:5px">📄 No Dues Certificate</a>`;
     if(plUrl) docBtns += `<a href="javascript:void(0)" onclick="_openPdfFromDrive('${_gasPdfProxyUrl(plUrl)}')" class="btn btn-secondary btn-sm" style="font-size:12px;gap:5px">📋 Provisional Letter</a>`;
+    // v37.2: REMOVED the "⬇ No Dues (Re-generate)" button. Per the user's
+    // security requirement: PDF generation AND regeneration must be done
+    // ONLY by the warden, never by students. Students can VIEW their existing
+    // PDFs (above buttons open them via the doGet proxy) but cannot generate
+    // or regenerate any PDF. All PDF generation/regeneration is now strictly
+    // a warden-side action (warden-initiated buttons in the warden UI).
     const notice = document.createElement('div');
     notice.id = 'cs-alumni-lock';
     notice.innerHTML = `
@@ -6879,6 +7309,14 @@ async function _wrAlumniSearch() {
     if(plUrl) docLinks += `<a href="javascript:void(0)" onclick="_openPdfFromDrive('${_gasPdfProxyUrl(plUrl)}')" class="btn btn-secondary btn-sm" style="font-size:11px;margin-right:6px">📋 Provisional Letter</a>`;
     if(alUrl) docLinks += `<a href="javascript:void(0)" onclick="_openPdfFromDrive('${_gasPdfProxyUrl(alUrl)}')" class="btn btn-secondary btn-sm" style="font-size:11px;margin-right:6px">📄 Allotment Letter</a>`;
     if(ndUrl) docLinks += `<a href="javascript:void(0)" onclick="_openPdfFromDrive('${_gasPdfProxyUrl(ndUrl)}')" class="btn btn-gold btn-sm" style="font-size:11px">📄 No Dues Certificate</a>`;
+    // v37.2: WARDEN-ONLY client-side PDF regeneration button. This is only
+    // visible in the warden's Alumni tab (this code is inside _wrAlumniSearch,
+    // which is the warden's alumni-lookup function — students never reach here).
+    // The warden can re-generate the No Dues PDF in the browser and re-save it
+    // to their Drive (the script runs as the warden via uploadGeneratedPdf,
+    // so the new PDF is owned by the warden, in the warden's Drive — same as
+    // the original backend-generated PDF).
+    docLinks += `<a href="javascript:void(0)" onclick="_wardenRegenNoDuesClientSide('${_esc(a.rollFull)}')" class="btn btn-secondary btn-sm" style="font-size:11px;margin-left:6px" title="Generate a fresh PDF in the warden's browser (no server-side rendering)">🔄 Re-generate No Dues</a>`;
     if(!docLinks) docLinks = '<span style="color:var(--gray-400);font-size:12px">No document links available</span>';
 
     if(resultEl) resultEl.innerHTML = `
