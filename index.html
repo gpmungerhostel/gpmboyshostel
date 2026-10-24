@@ -2941,7 +2941,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzq_QiZK6mqc1S5Z4WNCS_c
 // ─── BACKEND VERSION CHECK ──────────────────────────────────────────────────
 // Fetches the backend version on page load and displays a small status banner
 // on the Download Provisional Letter page. Helps verify the deployment is current.
-const EXPECTED_BACKEND_VERSION = 'v37.3';
+const EXPECTED_BACKEND_VERSION = 'v37.4';
 let _backendVersion = null;
 let _backendVersionChecked = false;
 
@@ -3603,13 +3603,14 @@ async function callBackend(action, data={}) {
 
       let lastErr = null;
       for(let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-        // v37.0: AbortController timeout — 45s for write operations (PDF gen can be
-        // slow on the server), 30s for everything else. Without this, a stuck fetch
-        // hangs forever; the user clicks again, fires a second request, and now you
-        // have 2 Apps Script slots held instead of 1 — making the concurrent-quota
-        // pressure worse. Timeout + retry is the only sane recovery.
+        // v37.4: Timeout tuning — login + reads should NOT take 30s. If the server
+        // doesn't respond in 12s, it's unreachable; retrying just doubles the
+        // user's wait. Writes (PDF generation, payment submission) get 45s because
+        // they genuinely can be slow. The previous 30s-for-everything + 3 retries
+        // meant a stuck login could hang for ~2 minutes before finally giving up —
+        // the warden saw "Verifying…" forever.
         const isWrite = ['newStudent','updateStudent','updateRejectedAdmission','submitConsolidatedPayment','payFine','approvePayment','approvePaymentBatch','rejectPayment','rejectPaymentBatch','verifyFinePayment','provisionalApprove','approveStudent','issueNoDues','decideLeave','applyLeave','bulkApproveLeaves','wardenEditStudent','wardenDeleteStudent','issueAllotmentLetter','reissueAllotmentLetter','regenProvisionalLetter','initNewSemester','imposeFine','revokeFine','updateHostelInfo','saveNoDuesPreCheck','saveImage','submitGrievance','replyGrievance','addNotice','deleteNotice','sendMessageToStudent','deleteMessage','debarStudent','undebarStudent','issueFeeDemandNotices','issueFeeDemandNoticeForStudent','wardenRequestRecheck','adminSaveIntake','adminAllotAccommodation','markCautionRefunded','uploadGeneratedPdf','recalcLateFines'].includes(action);
-        const timeoutMs = isWrite ? 45000 : 30000;
+        const timeoutMs = isWrite ? 45000 : 12000;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
         try {
@@ -3649,17 +3650,29 @@ async function callBackend(action, data={}) {
           }
         } catch(eFetch) {
           clearTimeout(timeoutId);
-          // AbortError = our timeout. Network error = browser couldn't reach server.
+          // v37.4: DO NOT retry on AbortError (timeout). The previous logic retried
+          // timeouts 3 times — meaning a stuck login would hang for
+          // 12s + 800ms + 12s + 1.6s + 12s + 3.2s + 12s = ~54s before giving up.
+          // Timeouts mean the server is unreachable; retrying just wastes the
+          // user's time. Fail fast with a clear message so the user can retry
+          // manually (or check their connection).
+          //
+          // We DO still retry on network errors (fetch() threw before any
+          // response was received — e.g. DNS failure, connection refused) —
+          // those are sometimes transient (mobile network blip).
           const isAbort = eFetch.name === 'AbortError';
           const isNetErr = eFetch.message.toLowerCase().includes('fetch') || eFetch.message.toLowerCase().includes('network');
-          if((isAbort || isNetErr) && attempt < MAX_RETRIES) {
+          if(isAbort) {
+            // Timeout — fail immediately, no retry
+            return {success:false, error:"Request timed out. Please check your internet connection and try again."};
+          }
+          if(isNetErr && attempt < MAX_RETRIES) {
             const delay = BASE_DELAY * Math.pow(2, attempt);
-            console.warn(`callBackend ${action}: ${isAbort?'timeout':'network error'} on attempt ${attempt+1}/${MAX_RETRIES+1} — retrying in ${delay}ms`);
+            console.warn(`callBackend ${action}: network error on attempt ${attempt+1}/${MAX_RETRIES+1} — retrying in ${delay}ms`);
             await new Promise(r => setTimeout(r, delay));
             continue;
           }
           lastErr = eFetch;
-          // If we've exhausted retries (or can't retry), break out and return the error
           break;
         }
       }
@@ -4589,7 +4602,17 @@ async function doLogin() {
   if(!email||!pwd){errEl.textContent='Email and password required.';errEl.classList.remove('hidden');return;}
   const btn=document.getElementById('btn-login');
   btn.disabled=true;btn.innerHTML='<span class="spinner spinner-dark"></span> Logging in…';
-  const r=await callBackend('login',{email,password:pwd});
+  let r;
+  try {
+    r = await callBackend('login',{email,password:pwd});
+  } catch(e) {
+    // v37.4: even if callBackend throws, re-enable the button + show error
+    btn.disabled=false;btn.textContent='Login';
+    errEl.textContent='Login failed: ' + (e.message || 'unknown error') + '. Please check your internet connection and try again.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  // v37.4: ALWAYS re-enable the button after callBackend returns (success or error)
   btn.disabled=false;btn.textContent='Login';
 
   if(r.success&&r.student){
@@ -7235,9 +7258,23 @@ async function wardenLogin() {
   }
   const btn = document.querySelector('#wr-login .btn-primary');
   if(btn) { btn.disabled=true; btn.innerHTML='<span class="spinner spinner-dark"></span> Verifying…'; }
-  const r = await callBackend('wardenLogin', {wardenId:id, wardenPass:pass});
+  let r;
+  try {
+    r = await callBackend('wardenLogin', {wardenId:id, wardenPass:pass});
+  } catch(e) {
+    // v37.4: even if callBackend throws (it shouldn't — it catches internally —
+    // but defense in depth), re-enable the button + show a clear error
+    if(btn) { btn.disabled=false; btn.textContent='Login to Dashboard'; }
+    errEl.textContent = 'Login failed: ' + (e.message || 'unknown error') + '. Please check your internet connection and try again.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  // v37.4: ALWAYS re-enable the button — even if callBackend returned an error
+  // or timed out. The previous code only re-enabled on success/error response;
+  // if callBackend hung (rare but possible), the button stayed disabled forever
+  // and the warden saw "Verifying…" indefinitely.
   if(btn) { btn.disabled=false; btn.textContent='Login to Dashboard'; }
-  if(r.success) {
+  if(r && r.success) {
     errEl.classList.add('hidden');
     document.getElementById('wr-login').classList.add('hidden');
     document.getElementById('wr-dashboard').classList.remove('hidden');
@@ -7245,7 +7282,7 @@ async function wardenLogin() {
     // Pre-load date windows so _adminProvDeadline is available when opening any student
     loadDateWindows();
   } else {
-    errEl.textContent = r.error || 'Invalid warden ID or password.';
+    errEl.textContent = (r && r.error) ? r.error : 'Invalid warden ID or password.';
     errEl.classList.remove('hidden');
   }
 }
